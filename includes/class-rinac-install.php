@@ -115,22 +115,25 @@ class RINAC_Install {
      * Crear opciones por defecto
      */
     public static function create_default_options() {
-        // Opciones generales del plugin
+        // Configuraciones por defecto
         $default_options = array(
-            'maximo_personas_hora_default' => 10,
-            'calendario_rango_anos' => 2,
-            'email_notifications' => true,
-            'require_phone' => false,
-            'calendario_start_day' => 1 // 1 = Lunes, 0 = Domingo
+            'rinac_maximo_personas_hora_default' => 10,
+            'rinac_calendario_rango_anos' => 2,
+            'rinac_email_notifications' => true,
+            'rinac_require_phone' => false,
+            'rinac_calendario_start_day' => 1
         );
         
-        foreach ($default_options as $option_name => $option_value) {
-            if (!get_option('rinac_' . $option_name)) {
-                add_option('rinac_' . $option_name, $option_value);
+        foreach ($default_options as $option_name => $default_value) {
+            if (get_option($option_name) === false) {
+                update_option($option_name, $default_value);
             }
         }
         
-        // Crear rango horario de ejemplo
+        // Actualizar versión de la base de datos
+        update_option('rinac_db_version', '1.0.0');
+        
+        // Crear datos de ejemplo
         self::create_sample_data();
     }
     
@@ -211,7 +214,7 @@ class RINAC_Install {
         self::create_tables();
         
         // Configuración inicial
-        self::set_default_options();
+        self::create_default_options();
         
         // Flush rewrite rules
         flush_rewrite_rules();
@@ -223,28 +226,5 @@ class RINAC_Install {
     public static function deactivate() {
         // Flush rewrite rules
         flush_rewrite_rules();
-    }
-    
-    /**
-     * Configurar opciones por defecto
-     */
-    private static function set_default_options() {
-        // Configuraciones por defecto
-        $default_options = array(
-            'rinac_maximo_personas_hora_default' => 10,
-            'rinac_calendario_rango_anos' => 2,
-            'rinac_email_notifications' => true,
-            'rinac_require_phone' => false,
-            'rinac_calendario_start_day' => 1
-        );
-        
-        foreach ($default_options as $option_name => $default_value) {
-            if (get_option($option_name) === false) {
-                update_option($option_name, $default_value);
-            }
-        }
-        
-        // Actualizar versión de la base de datos
-        update_option('rinac_db_version', '1.0.0');
     }
 }

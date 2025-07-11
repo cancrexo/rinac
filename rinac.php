@@ -43,6 +43,9 @@ class RINAC {
      * Constructor privado para implementar Singleton
      */
     private function __construct() {
+        // Incluir clase de instalación antes de registrar hooks
+        require_once RINAC_PLUGIN_PATH . 'includes/class-rinac-install.php';
+        
         $this->init_hooks();
     }
     
@@ -112,8 +115,7 @@ class RINAC {
      * Incluir archivos necesarios
      */
     private function includes() {
-        // Incluir clases principales
-        require_once RINAC_PLUGIN_PATH . 'includes/class-rinac-install.php';
+        // Incluir clases principales (Install ya está incluida en el constructor)
         require_once RINAC_PLUGIN_PATH . 'includes/class-rinac-product-type.php';
         require_once RINAC_PLUGIN_PATH . 'includes/class-rinac-admin.php';
         require_once RINAC_PLUGIN_PATH . 'includes/class-rinac-frontend.php';
