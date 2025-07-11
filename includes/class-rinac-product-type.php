@@ -37,6 +37,9 @@ class RINAC_Product_Type {
         
         // Asegurar que los productos VISITAS son virtuales
         add_filter('woocommerce_product_class', array($this, 'set_visitas_product_class'), 10, 2);
+        
+        // Establecer valores por defecto para nuevos productos VISITAS
+        add_action('wp_insert_post', array($this, 'set_default_values_for_new_visitas'), 10, 3);
     }
     
     /**
@@ -87,10 +90,16 @@ class RINAC_Product_Type {
         // Panel de Configuración General
         echo '<div id="rinac_general_product_data" class="panel woocommerce_options_panel hidden">';
         
+        // Obtener valor actual o usar el valor por defecto de configuración
+        $current_value = get_post_meta($post->ID, '_rinac_maximo_personas_hora', true);
+        $default_value = get_option('rinac_max_personas_default', 10);
+        $value = $current_value ? $current_value : $default_value;
+        
         woocommerce_wp_text_input(array(
             'id'          => '_rinac_maximo_personas_hora',
             'label'       => __('Máximo personas por hora', 'rinac'),
-            'placeholder' => get_option('rinac_maximo_personas_hora_default', 10),
+            'value'       => $value,
+            'placeholder' => $default_value,
             'desc_tip'    => true,
             'description' => __('Número máximo de personas que pueden reservar por hora', 'rinac'),
             'type'        => 'number',
@@ -215,98 +224,58 @@ class RINAC_Product_Type {
      * JavaScript para manejar comportamiento del tipo de producto
      */
     public function visitas_product_type_options() {
-        global $post, $woocommerce, $pagenow;
+        global $post, $pagenow;
         
         if ($pagenow != 'post.php' && $pagenow != 'post-new.php') return;
         if (!$post || $post->post_type != 'product') return;
         
+        // El JavaScript está manejado en assets/js/product.js
+        // Aquí solo agregamos CSS específico si es necesario
         ?>
-        <script type='text/javascript'>
-        jQuery(document).ready(function($) {
-            // Mostrar/ocultar opciones según el tipo de producto
-            $('select#product-type').change(function(){
-                if ($('select#product-type').val() == 'visitas') {
-                    $('.show_if_visitas').show();
-                    $('.hide_if_visitas').hide();
-                    
-                    // Marcar como virtual automáticamente
-                    $('#_virtual').prop('checked', true);
-                    $('#_virtual').closest('.options_group').hide();
-                    
-                    // Ocultar campos no necesarios
-                    $('.show_if_simple, .show_if_variable').hide();
-                    $('.hide_if_virtual').hide();
-                } else {
-                    $('.show_if_visitas').hide();
-                    $('#_virtual').closest('.options_group').show();
-                }
-            }).change();
-            
-            // Inicializar calendario si está en la pestaña correcta
-            if ($('#rinac_calendar_product_data').length) {
-                initRinacCalendar();
+        <style type="text/css">
+            .rinac-horario-item {
+                background: #f9f9f9;
+                border: 1px solid #ddd;
+                padding: 10px;
+                margin: 5px 0;
+                border-radius: 3px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
             }
             
-            // Inicializar gestión de horarios
-            if ($('#rinac-horarios-container').length) {
-                initRinacHorarios();
+            .rinac-drag-handle {
+                cursor: move;
+                color: #666;
+                font-weight: bold;
             }
-        });
-        
-        function initRinacCalendar() {
-            // Aquí inicializaremos el calendario
-            // Por ahora un placeholder
-            $('#rinac-calendar').html('<p>Calendario se inicializará aquí</p>');
-        }
-        
-        function initRinacHorarios() {
-            // Hacer sortable la lista de horarios
-            $('#rinac-horarios-list').sortable({
-                handle: '.rinac-drag-handle'
-            });
             
-            // Añadir rango predefinido
-            $('#rinac_add_rango').click(function() {
-                var rangoId = $('#rinac_rango_selector').val();
-                if (rangoId) {
-                    // AJAX para obtener las horas del rango
-                    $.post(ajaxurl, {
-                        action: 'rinac_get_rango_horas',
-                        rango_id: rangoId,
-                        nonce: '<?php echo wp_create_nonce('rinac_admin_nonce'); ?>'
-                    }, function(response) {
-                        if (response.success) {
-                            response.data.forEach(function(hora) {
-                                addHorarioItem(hora.descripcion, hora.maximo_personas_slot);
-                            });
-                        }
-                    });
-                }
-            });
+            .rinac-horario-item input[type="text"] {
+                flex: 2;
+            }
             
-            // Añadir hora manual
-            $('#rinac_add_hora_manual').click(function() {
-                addHorarioItem('', <?php echo get_option('rinac_maximo_personas_hora_default', 10); ?>);
-            });
+            .rinac-horario-item input[type="number"] {
+                width: 80px;
+            }
             
-            // Eliminar horario
-            $(document).on('click', '.rinac-remove-horario', function() {
-                $(this).closest('.rinac-horario-item').remove();
-            });
-        }
-        
-        function addHorarioItem(descripcion, maxPersonas) {
-            var html = '<div class="rinac-horario-item">' +
-                '<span class="rinac-drag-handle">⋮⋮</span>' +
-                '<input type="text" name="rinac_horarios_descripcion[]" value="' + descripcion + '" placeholder="<?php echo __('ej: 15:00h - 16:00h', 'rinac'); ?>" />' +
-                '<input type="number" name="rinac_horarios_personas[]" value="' + maxPersonas + '" min="1" step="1" />' +
-                '<input type="hidden" name="rinac_horarios_id[]" value="" />' +
-                '<button type="button" class="rinac-remove-horario button"><?php echo __('Eliminar', 'rinac'); ?></button>' +
-                '</div>';
+            .rinac-remove-horario {
+                background: #dc3232;
+                color: white;
+                border-color: #dc3232;
+            }
             
-            $('#rinac-horarios-list').append(html);
-        }
-        </script>
+            .rinac-remove-horario:hover {
+                background: #c62d2d;
+            }
+            
+            #rinac-horarios-list.ui-sortable .rinac-horario-item {
+                cursor: move;
+            }
+            
+            .show_if_visitas {
+                display: none;
+            }
+        </style>
         <?php
     }
     
@@ -323,8 +292,17 @@ class RINAC_Product_Type {
         // Guardar máximo personas por hora
         if (isset($_POST['_rinac_maximo_personas_hora'])) {
             $max_personas = intval($_POST['_rinac_maximo_personas_hora']);
-            update_post_meta($post_id, '_rinac_maximo_personas_hora', $max_personas);
+        } else {
+            // Si no se especifica, usar el valor por defecto de configuración
+            $max_personas = get_option('rinac_max_personas_default', 10);
         }
+        
+        // Asegurar que siempre hay un valor válido
+        if ($max_personas <= 0) {
+            $max_personas = get_option('rinac_max_personas_default', 10);
+        }
+        
+        update_post_meta($post_id, '_rinac_maximo_personas_hora', $max_personas);
         
         // Guardar horarios del producto
         $this->save_product_horarios($post_id);
@@ -376,5 +354,31 @@ class RINAC_Product_Type {
             $classname = 'RINAC_Product_Visitas';
         }
         return $classname;
+    }
+    
+    /**
+     * Establecer valores por defecto para nuevos productos VISITAS
+     */
+    public function set_default_values_for_new_visitas($post_id, $post, $update) {
+        // Solo procesar si es un nuevo producto (no una actualización)
+        if ($update) {
+            return;
+        }
+        
+        // Solo procesar productos
+        if ($post->post_type !== 'product') {
+            return;
+        }
+        
+        // Verificar si es tipo VISITAS (puede que aún no esté establecido)
+        $product_type = get_post_meta($post_id, '_product_type', true);
+        if ($product_type === 'visitas') {
+            // Establecer máximo personas por defecto si no está establecido
+            $current_max = get_post_meta($post_id, '_rinac_maximo_personas_hora', true);
+            if (empty($current_max)) {
+                $default_max = get_option('rinac_max_personas_default', 10);
+                update_post_meta($post_id, '_rinac_maximo_personas_hora', $default_max);
+            }
+        }
     }
 }
