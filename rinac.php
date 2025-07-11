@@ -200,6 +200,31 @@ class RINAC {
         echo __('RINAC requiere que WooCommerce esté instalado y activado.', 'rinac');
         echo '</p></div>';
     }
+    
+    /**
+     * Declarar compatibilidad con WooCommerce
+     */
+    private function declare_woocommerce_compatibility() {
+        // Declarar compatibilidad con HPOS (High-Performance Order Storage)
+        if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) {
+            \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility(
+                'custom_order_tables',
+                __FILE__,
+                true
+            );
+        }
+        
+        // Declarar compatibilidad con WooCommerce en general
+        add_action('before_woocommerce_init', function() {
+            if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) {
+                \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility(
+                    'custom_order_tables',
+                    __FILE__,
+                    true
+                );
+            }
+        });
+    }
 }
 
 /**

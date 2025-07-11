@@ -160,25 +160,27 @@ class RINAC_Install {
             
             $rango_id = $wpdb->insert_id;
             
-            // Crear horas de ejemplo
+            // Crear horas de ejemplo con la estructura correcta
             $horas_ejemplo = array(
-                array('descripcion' => '10:00h - 11:00h', 'orden' => 1),
-                array('descripcion' => '11:30h - 12:30h', 'orden' => 2),
-                array('descripcion' => '16:00h - 17:00h', 'orden' => 3),
-                array('descripcion' => '17:30h - 18:30h', 'orden' => 4)
+                '10:00:00',
+                '11:30:00', 
+                '16:00:00',
+                '17:30:00'
             );
             
-            $maximo_default = get_option('rinac_maximo_personas_hora_default', 10);
+            $capacidad_default = get_option('rinac_maximo_personas_hora_default', 10);
+            $orden = 1;
             
             foreach ($horas_ejemplo as $hora) {
                 $wpdb->insert(
                     $table_horas,
                     array(
                         'rango_id' => $rango_id,
-                        'descripcion' => $hora['descripcion'],
-                        'maximo_personas_slot' => $maximo_default,
-                        'orden' => $hora['orden']
-                    )
+                        'hora' => $hora,
+                        'capacidad' => $capacidad_default,
+                        'orden' => $orden++
+                    ),
+                    array('%d', '%s', '%d', '%d')
                 );
             }
         }
