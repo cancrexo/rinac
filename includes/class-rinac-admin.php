@@ -57,8 +57,8 @@ class RINAC_Admin {
             __('Configuración', 'rinac'),
             __('Configuración', 'rinac'),
             'manage_woocommerce',
-            'rinac-admin',
-            array($this, 'admin_page')
+            'rinac-configuracion',
+            array($this, 'configuracion_page')
         );
         
         add_submenu_page(
@@ -212,15 +212,13 @@ class RINAC_Admin {
         
         // Próximas reservas (próximos 7 días)
         $data['proximas_reservas'] = $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT r.*, p.post_title as producto_nombre 
-                 FROM $table_reservas r
-                 LEFT JOIN {$wpdb->posts} p ON r.product_id = p.ID
-                 WHERE r.fecha_reserva BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-                 AND r.status = 'confirmada'
-                 ORDER BY r.fecha_reserva, r.hora
-                 LIMIT 10"
-            )
+            "SELECT r.*, p.post_title as producto_nombre 
+             FROM $table_reservas r
+             LEFT JOIN {$wpdb->posts} p ON r.product_id = p.ID
+             WHERE r.fecha_reserva BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+             AND r.status = 'confirmada'
+             ORDER BY r.fecha_reserva, r.hora
+             LIMIT 10"
         );
         
         return $data;
@@ -288,6 +286,93 @@ class RINAC_Admin {
             <p><?php echo __('Funcionalidad de gestión de reservas - En desarrollo', 'rinac'); ?></p>
         </div>
         <?php
+    }
+    
+    /**
+     * Página de configuración del plugin
+     */
+    public function configuracion_page() {
+        // Procesar formulario si se envió
+        if (isset($_POST['submit_config']) && wp_verify_nonce($_POST['rinac_config_nonce'], 'rinac_config')) {
+            $this->process_config_form();
+        }
+        
+        // Obtener configuraciones actuales
+        $config = array(
+            'max_personas_default' => get_option('rinac_max_personas_default', 10),
+            'rango_calendario' => get_option('rinac_rango_calendario', 365),
+            'telefono_obligatorio' => get_option('rinac_telefono_obligatorio', 0),
+            'email_notificaciones' => get_option('rinac_email_notificaciones', 1),
+            'email_admin' => get_option('rinac_email_admin', get_option('admin_email')),
+        );
+        
+        $template_data = array(
+            'config' => $config,
+            'strings' => array(
+                'page_title' => __('Configuración de RINAC', 'rinac'),
+                'general_settings' => __('Configuración General', 'rinac'),
+                'max_personas_default' => __('Máximo personas por defecto', 'rinac'),
+                'rango_calendario' => __('Rango del calendario (días)', 'rinac'),
+                'telefono_obligatorio' => __('Teléfono obligatorio', 'rinac'),
+                'email_settings' => __('Configuración de Email', 'rinac'),
+                'email_notificaciones' => __('Activar notificaciones por email', 'rinac'),
+                'email_admin' => __('Email del administrador', 'rinac'),
+                'save_changes' => __('Guardar Cambios', 'rinac'),
+            )
+        );
+        
+        // Debug: Verificar si la función exists y el template existe
+        if (!class_exists('RINAC_Template_Helper')) {
+            echo '<div class="wrap"><h1>Error: RINAC_Template_Helper no existe</h1></div>';
+            return;
+        }
+        
+        $template_path = RINAC_PLUGIN_PATH . 'templates/admin/configuracion.php';
+        if (!file_exists($template_path)) {
+            echo '<div class="wrap"><h1>Error: Template no encontrado en: ' . esc_html($template_path) . '</h1></div>';
+            return;
+        }
+        
+        $template_output = RINAC_Template_Helper::get_template('admin/configuracion.php', $template_data);
+        
+        if (empty($template_output)) {
+            // Fallback si el template no genera output
+            ?>
+            <div class="wrap">
+                <h1><?php echo esc_html($template_data['strings']['page_title']); ?></h1>
+                <p>Error: El template de configuración no pudo cargarse correctamente.</p>
+                <p>Ruta del template: <?php echo esc_html($template_path); ?></p>
+                <p>Datos del template: <?php echo '<pre>' . print_r($template_data, true) . '</pre>'; ?></p>
+            </div>
+            <?php
+        } else {
+            echo $template_output;
+        }
+    }
+    
+    /**
+     * Procesar formulario de configuración
+     */
+    private function process_config_form() {
+        // Validar y guardar configuraciones
+        if (isset($_POST['max_personas_default'])) {
+            update_option('rinac_max_personas_default', intval($_POST['max_personas_default']));
+        }
+        
+        if (isset($_POST['rango_calendario'])) {
+            update_option('rinac_rango_calendario', intval($_POST['rango_calendario']));
+        }
+        
+        update_option('rinac_telefono_obligatorio', isset($_POST['telefono_obligatorio']) ? 1 : 0);
+        update_option('rinac_email_notificaciones', isset($_POST['email_notificaciones']) ? 1 : 0);
+        
+        if (isset($_POST['email_admin']) && is_email($_POST['email_admin'])) {
+            update_option('rinac_email_admin', sanitize_email($_POST['email_admin']));
+        }
+        
+        add_action('admin_notices', function() {
+            echo '<div class="notice notice-success is-dismissible"><p>' . __('Configuración guardada correctamente.', 'rinac') . '</p></div>';
+        });
     }
     
     /**

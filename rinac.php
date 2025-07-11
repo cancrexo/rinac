@@ -46,6 +46,9 @@ class RINAC {
         // Incluir clase de instalación antes de registrar hooks
         require_once RINAC_PLUGIN_PATH . 'includes/class-rinac-install.php';
         
+        // Declarar compatibilidad con WooCommerce
+        $this->declare_woocommerce_compatibility();
+        
         $this->init_hooks();
     }
     
@@ -205,20 +208,19 @@ class RINAC {
      * Declarar compatibilidad con WooCommerce
      */
     private function declare_woocommerce_compatibility() {
-        // Declarar compatibilidad con HPOS (High-Performance Order Storage)
-        if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) {
-            \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility(
-                'custom_order_tables',
-                __FILE__,
-                true
-            );
-        }
-        
-        // Declarar compatibilidad con WooCommerce en general
+        // Declarar compatibilidad antes de que WooCommerce se inicialice
         add_action('before_woocommerce_init', function() {
             if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) {
+                // HPOS (High-Performance Order Storage)
                 \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility(
                     'custom_order_tables',
+                    __FILE__,
+                    true
+                );
+                
+                // Cart and Checkout Blocks
+                \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility(
+                    'cart_checkout_blocks',
                     __FILE__,
                     true
                 );
