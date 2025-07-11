@@ -5,7 +5,7 @@ Variables: $rango_id, $rango_data, $horas
 
 <div class="rinac-admin-form rangos-horarios-form">
     <div class="form-header">
-        <h2><?php echo $rango_id ? __('Editar Rango Horario', 'rinac') : __('Nuevo Rango Horario', 'rinac'); ?></h2>
+        <h2><?php echo !empty($rango_id) ? __('Editar Rango Horario', 'rinac') : __('Nuevo Rango Horario', 'rinac'); ?></h2>
         <p class="form-description"><?php _e('Los rangos horarios permiten crear plantillas reutilizables de horarios para asignar a diferentes productos.', 'rinac'); ?></p>
     </div>
 
@@ -168,7 +168,7 @@ Variables: $rango_id, $rango_data, $horas
         <!-- Acciones del formulario -->
         <div class="form-actions">
             <div class="actions-left">
-                <?php if ($rango_id): ?>
+                <?php if (!empty($rango_id)): ?>
                     <button type="button" class="button button-secondary" id="duplicate-rango">
                         <span class="dashicons dashicons-admin-page"></span>
                         <?php _e('Duplicar', 'rinac'); ?>
@@ -186,7 +186,7 @@ Variables: $rango_id, $rango_data, $horas
                 </button>
                 <button type="submit" class="button button-primary" id="save-rango">
                     <span class="dashicons dashicons-saved"></span>
-                    <?php echo $rango_id ? __('Actualizar Rango', 'rinac') : __('Crear Rango', 'rinac'); ?>
+                    <?php echo !empty($rango_id) ? __('Actualizar Rango', 'rinac') : __('Crear Rango', 'rinac'); ?>
                 </button>
             </div>
         </div>

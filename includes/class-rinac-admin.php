@@ -239,8 +239,31 @@ class RINAC_Admin {
         $table_rangos = $wpdb->prefix . 'rinac_rangos_horarios';
         $rangos = $wpdb->get_results("SELECT * FROM $table_rangos ORDER BY nombre");
         
+        // Determinar si estamos editando un rango específico
+        $rango_id = isset($_GET['rango_id']) ? intval($_GET['rango_id']) : null;
+        $rango_data = null;
+        $horas = array();
+        
+        if ($rango_id) {
+            $rango_data = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM $table_rangos WHERE id = %d", 
+                $rango_id
+            ));
+            
+            if ($rango_data) {
+                $table_horas = $wpdb->prefix . 'rinac_horas';
+                $horas = $wpdb->get_results($wpdb->prepare(
+                    "SELECT * FROM $table_horas WHERE rango_id = %d ORDER BY orden", 
+                    $rango_id
+                ));
+            }
+        }
+        
         $template_data = array(
             'rangos' => $rangos,
+            'rango_id' => $rango_id,
+            'rango_data' => $rango_data,
+            'horas' => $horas,
             'strings' => array(
                 'page_title' => __('Gestión de Rangos Horarios', 'rinac'),
                 'add_new_range' => __('Añadir Nuevo Rango', 'rinac'),
