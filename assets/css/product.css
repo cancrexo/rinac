@@ -1,0 +1,436 @@
+/* Estilos para la configuración de productos RINAC */
+
+.show_if_visitas {
+    display: none;
+}
+
+.product-type-visitas .show_if_visitas {
+    display: block;
+}
+
+/* Campos de configuración general */
+#rinac_general_product_data .options_group {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+#rinac_general_product_data .form-field {
+    margin-bottom: 15px;
+}
+
+/* Configuración de horarios */
+#rinac-horarios-container {
+    padding: 15px;
+}
+
+#rinac-horarios-container h5 {
+    margin: 15px 0 10px 0;
+    color: #23282d;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.rinac-horario-selector {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 10px;
+    background: #f0f0f1;
+    border-radius: 4px;
+}
+
+.rinac-horario-selector select {
+    flex: 1;
+    max-width: 200px;
+}
+
+#rinac-horarios-list {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    min-height: 60px;
+    background: #fafafa;
+    margin-bottom: 15px;
+}
+
+#rinac-horarios-list:empty::before {
+    content: "Arrastra rangos predefinidos aquí o añade horas manualmente";
+    color: #666;
+    font-style: italic;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
+}
+
+.rinac-horario-item {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 12px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    transition: box-shadow 0.2s ease;
+}
+
+.rinac-horario-item:hover {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.rinac-horario-item.ui-sortable-helper {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transform: rotate(2deg);
+}
+
+.rinac-drag-handle {
+    cursor: move;
+    font-size: 16px;
+    color: #666;
+    padding: 8px 4px;
+    user-select: none;
+}
+
+.rinac-drag-handle:hover {
+    color: #0073aa;
+}
+
+.rinac-horario-item input[type="text"] {
+    flex: 2;
+    min-width: 150px;
+}
+
+.rinac-horario-item input[type="number"] {
+    width: 80px;
+    text-align: center;
+}
+
+.rinac-horario-item input[type="hidden"] {
+    display: none;
+}
+
+.rinac-remove-horario {
+    background: #dc3232;
+    color: white;
+    border: 1px solid #dc3232;
+    border-radius: 3px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.rinac-remove-horario:hover {
+    background: #b32d2e;
+    border-color: #b32d2e;
+    color: white;
+}
+
+/* Botones de acción */
+#rinac_add_rango,
+#rinac_add_hora_manual {
+    background: #0073aa;
+    color: white;
+    border: 1px solid #0073aa;
+    transition: all 0.2s ease;
+}
+
+#rinac_add_rango:hover,
+#rinac_add_hora_manual:hover {
+    background: #005a87;
+    border-color: #005a87;
+}
+
+/* Calendario en producto */
+#rinac-calendar-container {
+    padding: 15px;
+}
+
+#rinac-calendar {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #fff;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+#rinac-calendar .rinac-calendar {
+    margin: 0;
+    border: none;
+}
+
+/* Herramientas del calendario */
+.rinac-calendar-tools {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.rinac-calendar-tool {
+    padding: 8px 12px;
+    background: #f0f0f1;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.rinac-calendar-tool:hover {
+    background: #e0e0e1;
+}
+
+.rinac-calendar-tool.active {
+    background: #0073aa;
+    color: white;
+    border-color: #0073aa;
+}
+
+/* Leyenda del calendario */
+.rinac-calendar-legend {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+    font-size: 12px;
+    flex-wrap: wrap;
+}
+
+.rinac-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.rinac-legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    border: 1px solid #ddd;
+}
+
+.rinac-legend-available {
+    background: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.rinac-legend-unavailable {
+    background: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.rinac-legend-past {
+    background: #f0f0f0;
+    border-color: #ddd;
+}
+
+.rinac-legend-bookings {
+    background: #0073aa;
+    border-color: #005a87;
+}
+
+/* Indicadores de estado */
+.rinac-status-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-left: 5px;
+}
+
+.rinac-status-saved {
+    background: #27ae60;
+}
+
+.rinac-status-saving {
+    background: #f39c12;
+    animation: rinac-pulse 1s infinite;
+}
+
+.rinac-status-error {
+    background: #e74c3c;
+}
+
+@keyframes rinac-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Mensajes en producto */
+.rinac-product-message {
+    padding: 10px 15px;
+    margin: 10px 0;
+    border-left: 4px solid;
+    border-radius: 0 4px 4px 0;
+    font-size: 13px;
+}
+
+.rinac-product-message.success {
+    background: #d4edda;
+    border-color: #28a745;
+    color: #155724;
+}
+
+.rinac-product-message.error {
+    background: #f8d7da;
+    border-color: #dc3545;
+    color: #721c24;
+}
+
+.rinac-product-message.warning {
+    background: #fff3cd;
+    border-color: #ffc107;
+    color: #856404;
+}
+
+/* Ajustes para pantallas pequeñas */
+@media (max-width: 768px) {
+    .rinac-horario-item {
+        flex-direction: column;
+        gap: 8px;
+        align-items: stretch;
+    }
+    
+    .rinac-horario-item input {
+        width: 100%;
+    }
+    
+    .rinac-drag-handle {
+        order: -1;
+        text-align: center;
+    }
+    
+    .rinac-calendar-tools {
+        justify-content: center;
+    }
+    
+    .rinac-calendar-legend {
+        justify-content: center;
+    }
+}
+
+/* Loading states */
+.rinac-loading-overlay {
+    position: relative;
+}
+
+.rinac-loading-overlay::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255,255,255,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.rinac-loading-overlay.loading::after {
+    content: 'Cargando...';
+    font-size: 14px;
+    color: #666;
+}
+
+/* Validación visual */
+.rinac-field-invalid {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+}
+
+.rinac-field-valid {
+    border-color: #28a745 !important;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25) !important;
+}
+
+/* Tooltips para ayuda */
+.rinac-help-tip {
+    position: relative;
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #666;
+    color: white;
+    text-align: center;
+    font-size: 12px;
+    line-height: 16px;
+    cursor: help;
+    margin-left: 5px;
+}
+
+.rinac-help-tip::before {
+    content: '?';
+}
+
+.rinac-help-tip::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    max-width: 250px;
+    white-space: normal;
+}
+
+.rinac-help-tip:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Estilos para pestañas activas */
+.woocommerce_options_panel.active {
+    display: block;
+}
+
+/* Mejoras en la experiencia del usuario */
+.rinac-smooth-transition {
+    transition: all 0.3s ease;
+}
+
+.rinac-hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Estados de carga específicos */
+.rinac-button-loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.rinac-button-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: rinac-spin 1s linear infinite;
+}
+
+@keyframes rinac-spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}

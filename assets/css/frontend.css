@@ -1,0 +1,386 @@
+/* Estilos para frontend de RINAC */
+
+.rinac-booking-form {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 25px;
+    margin: 20px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.rinac-booking-form h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #333;
+    font-size: 24px;
+    text-align: center;
+}
+
+.rinac-field-group {
+    margin-bottom: 20px;
+}
+
+.rinac-field-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #555;
+}
+
+.rinac-field-group .required {
+    color: #e74c3c;
+}
+
+.rinac-field-group input,
+.rinac-field-group select,
+.rinac-field-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.rinac-field-group input:focus,
+.rinac-field-group select:focus,
+.rinac-field-group textarea:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+}
+
+.rinac-field-group input:disabled,
+.rinac-field-group select:disabled {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+.rinac-field-group small {
+    display: block;
+    margin-top: 5px;
+    color: #666;
+    font-size: 14px;
+}
+
+/* Calendario de frontend */
+.ui-datepicker {
+    border: 1px solid #ddd !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+    border-radius: 8px !important;
+    padding: 10px !important;
+}
+
+.ui-datepicker-header {
+    background: #3498db !important;
+    color: white !important;
+    border-radius: 6px !important;
+    margin-bottom: 10px !important;
+}
+
+.ui-datepicker-title {
+    color: white !important;
+    font-weight: bold !important;
+}
+
+.ui-datepicker-prev,
+.ui-datepicker-next {
+    background: rgba(255,255,255,0.2) !important;
+    border: none !important;
+    border-radius: 4px !important;
+}
+
+.ui-datepicker-prev:hover,
+.ui-datepicker-next:hover {
+    background: rgba(255,255,255,0.3) !important;
+}
+
+.ui-datepicker td {
+    border: none !important;
+    padding: 2px !important;
+}
+
+.ui-datepicker td a {
+    border: 1px solid transparent !important;
+    border-radius: 4px !important;
+    text-align: center !important;
+    padding: 6px !important;
+    transition: all 0.3s ease !important;
+}
+
+.ui-datepicker td a:hover {
+    background: #3498db !important;
+    color: white !important;
+}
+
+.ui-datepicker .ui-state-active {
+    background: #2980b9 !important;
+    color: white !important;
+}
+
+.ui-datepicker .ui-state-disabled {
+    opacity: 0.3 !important;
+    cursor: not-allowed !important;
+}
+
+/* Resumen de reserva */
+.rinac-booking-summary {
+    background: #e8f5e8;
+    border: 1px solid #4caf50;
+    border-radius: 6px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.rinac-booking-summary h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #2e7d32;
+}
+
+.rinac-summary-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+.rinac-summary-item:last-child {
+    border-bottom: none;
+    font-weight: bold;
+    color: #2e7d32;
+}
+
+.rinac-summary-label {
+    font-weight: 500;
+}
+
+.rinac-summary-value {
+    color: #555;
+}
+
+/* Botón de reserva */
+.single_add_to_cart_button {
+    background: #27ae60 !important;
+    border-color: #27ae60 !important;
+    color: white !important;
+    padding: 15px 30px !important;
+    font-size: 18px !important;
+    font-weight: bold !important;
+    border-radius: 6px !important;
+    transition: all 0.3s ease !important;
+    width: 100% !important;
+    margin-top: 15px !important;
+}
+
+.single_add_to_cart_button:hover {
+    background: #229954 !important;
+    border-color: #229954 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 8px rgba(39, 174, 96, 0.3) !important;
+}
+
+.single_add_to_cart_button:disabled {
+    background: #bdc3c7 !important;
+    border-color: #bdc3c7 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Mensajes */
+.rinac-booking-messages {
+    margin-top: 15px;
+}
+
+.rinac-message {
+    padding: 12px 15px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.rinac-message-success {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.rinac-message-error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+.rinac-message-warning {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+}
+
+.rinac-message-info {
+    background: #d1ecf1;
+    border: 1px solid #bee5eb;
+    color: #0c5460;
+}
+
+/* Información de disponibilidad */
+.rinac-availability-info {
+    color: #666;
+    font-style: italic;
+}
+
+.rinac-availability-high {
+    color: #27ae60;
+}
+
+.rinac-availability-medium {
+    color: #f39c12;
+}
+
+.rinac-availability-low {
+    color: #e74c3c;
+}
+
+/* Loading spinner */
+.rinac-loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    animation: rinac-spin 1s linear infinite;
+    margin-left: 10px;
+}
+
+@keyframes rinac-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+    .rinac-booking-form {
+        padding: 20px 15px;
+        margin: 15px 0;
+    }
+    
+    .rinac-booking-form h3 {
+        font-size: 20px;
+    }
+    
+    .rinac-field-group input,
+    .rinac-field-group select,
+    .rinac-field-group textarea {
+        font-size: 16px; /* Prevent zoom on iOS */
+    }
+    
+    .rinac-summary-item {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .single_add_to_cart_button {
+        padding: 12px 20px !important;
+        font-size: 16px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .rinac-booking-form {
+        padding: 15px 10px;
+        margin: 10px 0;
+    }
+    
+    .rinac-field-group {
+        margin-bottom: 15px;
+    }
+}
+
+/* Animaciones */
+.rinac-fade-in {
+    animation: rinacFadeIn 0.5s ease-in-out;
+}
+
+@keyframes rinacFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.rinac-slide-down {
+    animation: rinacSlideDown 0.3s ease-out;
+}
+
+@keyframes rinacSlideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+        overflow: hidden;
+    }
+    to {
+        opacity: 1;
+        max-height: 200px;
+        overflow: visible;
+    }
+}
+
+/* Estados del formulario */
+.rinac-form-step-1 .rinac-step-2,
+.rinac-form-step-1 .rinac-step-3 {
+    display: none;
+}
+
+.rinac-form-step-2 .rinac-step-3 {
+    display: none;
+}
+
+/* Validación visual */
+.rinac-field-error {
+    border-color: #e74c3c !important;
+    box-shadow: 0 0 5px rgba(231, 76, 60, 0.3) !important;
+}
+
+.rinac-field-success {
+    border-color: #27ae60 !important;
+    box-shadow: 0 0 5px rgba(39, 174, 96, 0.3) !important;
+}
+
+/* Tooltips */
+.rinac-tooltip {
+    position: relative;
+    cursor: help;
+}
+
+.rinac-tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.rinac-tooltip:hover::after {
+    opacity: 1;
+    visibility: visible;
+    bottom: calc(100% + 5px);
+}
