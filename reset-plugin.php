@@ -25,7 +25,7 @@ echo "<h2>📋 Paso 1: Eliminando tablas existentes</h2>\n";
 
 $tables = array(
     $wpdb->prefix . 'rinac_reservas',
-    $wpdb->prefix . 'rinac_producto_horas', 
+    $wpdb->prefix . 'rinac_producto_horas',
     $wpdb->prefix . 'rinac_disponibilidad',
     $wpdb->prefix . 'rinac_horas',
     $wpdb->prefix . 'rinac_rangos_horarios'
@@ -72,7 +72,7 @@ foreach ($tables as $table) {
     if ($exists) {
         $columns = $wpdb->get_results("DESCRIBE $table");
         echo "✅ $table - " . count($columns) . " columnas<br>\n";
-        
+
         // Mostrar columnas para verificar
         foreach ($columns as $column) {
             echo "&nbsp;&nbsp;&nbsp;- {$column->Field} ({$column->Type})<br>\n";
@@ -99,4 +99,3 @@ if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) {
     echo "⚠️ WooCommerce HPOS Utils no disponible (versión WC antigua)<br>\n";
 }
 
-?>

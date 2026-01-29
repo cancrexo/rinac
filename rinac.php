@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: RINAC - RINAC Is Not Another Calendar
+ * Plugin Name: RINAC - Rinac Is Not Another Calendar
  * Plugin URI: https://adegaeidos.com
  * Description: Plugin de reservas para WooCommerce que permite crear productos de tipo VISITAS con calendario y gestión de horarios.
  * Version: 1.0.0
