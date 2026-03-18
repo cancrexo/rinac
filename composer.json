@@ -9,7 +9,10 @@
     "autoload": {
         "psr-4": {
             "Rinac\\": "src/"
-        }
+        },
+        "files": [
+            "src/functions.php"
+        ]
     },
     "config": {
         "optimize-autoloader": true,
