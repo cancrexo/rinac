@@ -29,6 +29,20 @@ define('RINAC_PLUGIN_BASENAME', plugin_basename(__FILE__));
 define('RINAC_PLUGIN_PATH', plugin_dir_path(__FILE__));
 define('RINAC_PLUGIN_URL', plugin_dir_url(__FILE__));
 
+// Cargar autoload de Composer (si existe).
+// Nota: `vendor/` no se versiona, así que en despliegue debe ejecutarse `composer install --no-dev`.
+$rinac_autoload = RINAC_PLUGIN_PATH . 'vendor/autoload.php';
+if (file_exists($rinac_autoload)) {
+    require_once $rinac_autoload;
+} else {
+    // Mantener el plugin funcionando con el loader actual, pero avisar en admin.
+    add_action('admin_notices', static function () {
+        echo '<div class="notice notice-warning"><p>';
+        echo esc_html__('RINAC: falta el autoload de Composer. Ejecuta "composer install --no-dev" en la carpeta del plugin.', 'rinac');
+        echo '</p></div>';
+    });
+}
+
 /**
  * Clase principal del plugin RINAC
  */
@@ -90,6 +104,11 @@ class RINAC {
         
         // Cargar archivos necesarios
         $this->includes();
+
+        // Arrancar el núcleo namespaced (si está disponible vía autoload).
+        if (class_exists(\Rinac\Plugin::class)) {
+            \Rinac\Plugin::instance();
+        }
         
         // Inicializar clases
         $this->init_classes();

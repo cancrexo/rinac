@@ -7,6 +7,16 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// Puente de compatibilidad:
+// - Si existe la clase namespaced (Composer/autoload), crear alias a `RINAC_Frontend`.
+// - Si no existe, mantener implementación legacy para no romper el plugin sin Composer.
+if (class_exists('Rinac\\Frontend\\Frontend')) {
+    if (!class_exists('RINAC_Frontend')) {
+        class_alias('Rinac\\Frontend\\Frontend', 'RINAC_Frontend');
+    }
+    return;
+}
+
 class RINAC_Frontend {
     
     /**

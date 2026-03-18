@@ -7,6 +7,16 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// Puente de compatibilidad:
+// - Si existe la clase namespaced (Composer/autoload), crear alias a `RINAC_Validation`.
+// - Si no existe, mantener implementación legacy para no romper el plugin sin Composer.
+if (class_exists('Rinac\\Validation\\Validation')) {
+    if (!class_exists('RINAC_Validation')) {
+        class_alias('Rinac\\Validation\\Validation', 'RINAC_Validation');
+    }
+    return;
+}
+
 class RINAC_Validation {
     
     /**
