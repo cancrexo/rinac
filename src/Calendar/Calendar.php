@@ -9,9 +9,11 @@ final class Calendar
     /**
      * Constructor
      */
-    public function __construct()
+    public function __construct(bool $register_hooks = true)
     {
-        $this->init_hooks();
+        if ($register_hooks) {
+            $this->init_hooks();
+        }
     }
 
     /**
@@ -19,14 +21,7 @@ final class Calendar
      */
     private function init_hooks()
     {
-        // AJAX para guardar disponibilidad del calendario
-        add_action('wp_ajax_rinac_save_calendar_data', array($this, 'ajax_save_calendar_data'));
-
-        // AJAX para obtener datos del calendario
-        add_action('wp_ajax_rinac_get_calendar_data', array($this, 'ajax_get_calendar_data'));
-
-        // AJAX para operaciones masivas de calendario
-        add_action('wp_ajax_rinac_bulk_calendar_operation', array($this, 'ajax_bulk_calendar_operation'));
+        // Los endpoints AJAX se registran de forma centralizada en \Rinac\Ajax\AjaxRequests.
     }
 
     /**
@@ -271,9 +266,10 @@ final class Calendar
             wp_die(__('No tienes permisos para realizar esta acción.', 'rinac'));
         }
 
-        $product_id = intval($_POST['product_id']);
-        $date = sanitize_text_field($_POST['date']);
-        $disponible = intval($_POST['disponible']);
+        $post = (isset($GLOBALS['_POST']) && \is_array($GLOBALS['_POST'])) ? $GLOBALS['_POST'] : array();
+        $product_id = isset($post['product_id']) ? intval($post['product_id']) : 0;
+        $date = isset($post['date']) ? sanitize_text_field($post['date']) : '';
+        $disponible = isset($post['disponible']) ? intval($post['disponible']) : 0;
 
         $success = $this->set_date_availability($product_id, $date, $disponible);
 
@@ -301,9 +297,10 @@ final class Calendar
             wp_die(__('No tienes permisos para realizar esta acción.', 'rinac'));
         }
 
-        $product_id = intval($_POST['product_id']);
-        $year = intval($_POST['year']);
-        $month = intval($_POST['month']);
+        $post = (isset($GLOBALS['_POST']) && \is_array($GLOBALS['_POST'])) ? $GLOBALS['_POST'] : array();
+        $product_id = isset($post['product_id']) ? intval($post['product_id']) : 0;
+        $year = isset($post['year']) ? intval($post['year']) : 0;
+        $month = isset($post['month']) ? intval($post['month']) : 0;
 
         $calendar_html = $this->render_admin_calendar($product_id, $year, $month);
 
@@ -323,10 +320,11 @@ final class Calendar
             wp_die(__('No tienes permisos para realizar esta acción.', 'rinac'));
         }
 
-        $product_id = intval($_POST['product_id']);
-        $operation = sanitize_text_field($_POST['operation']);
-        $start_date = sanitize_text_field($_POST['start_date']);
-        $end_date = sanitize_text_field($_POST['end_date']);
+        $post = (isset($GLOBALS['_POST']) && \is_array($GLOBALS['_POST'])) ? $GLOBALS['_POST'] : array();
+        $product_id = isset($post['product_id']) ? intval($post['product_id']) : 0;
+        $operation = isset($post['operation']) ? sanitize_text_field($post['operation']) : '';
+        $start_date = isset($post['start_date']) ? sanitize_text_field($post['start_date']) : '';
+        $end_date = isset($post['end_date']) ? sanitize_text_field($post['end_date']) : '';
 
         switch ($operation) {
             case 'enable_range':
@@ -360,7 +358,7 @@ final class Calendar
     /**
      * Establecer disponibilidad para fines de semana
      */
-    private function set_weekends_availability($product_id, $start_date, $end_date, $disponible)
+    public function set_weekends_availability($product_id, $start_date, $end_date, $disponible)
     {
         $current_date = $start_date;
         $success_count = 0;

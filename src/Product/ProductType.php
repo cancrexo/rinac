@@ -223,7 +223,7 @@ final class ProductType
             'nonce' => wp_create_nonce('rinac_admin_nonce')
         ));
 
-        return \RINAC_Template_Helper::get_template('admin/' . $template_name, $data);
+        return \Rinac\Template\TemplateHelper::get_template('admin/' . $template_name, $data);
     }
 
     /**

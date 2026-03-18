@@ -36,21 +36,6 @@ final class Frontend
 
         // Cargar scripts y estilos de frontend
         \add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_scripts'));
-
-        // AJAX para obtener horarios disponibles
-        \add_action('wp_ajax_rinac_get_horarios', array($this, 'ajax_get_horarios'));
-        \add_action('wp_ajax_nopriv_rinac_get_horarios', array($this, 'ajax_get_horarios'));
-
-        // AJAX para verificar disponibilidad
-        \add_action('wp_ajax_rinac_check_availability', array($this, 'ajax_check_availability'));
-        \add_action('wp_ajax_nopriv_rinac_check_availability', array($this, 'ajax_check_availability'));
-
-        // AJAX para renderizar modales
-        \add_action('wp_ajax_rinac_render_quick_booking_modal', array($this, 'ajax_render_quick_booking_modal'));
-        \add_action('wp_ajax_nopriv_rinac_render_quick_booking_modal', array($this, 'ajax_render_quick_booking_modal'));
-
-        \add_action('wp_ajax_rinac_render_booking_details_modal', array($this, 'ajax_render_booking_details_modal'));
-        \add_action('wp_ajax_nopriv_rinac_render_booking_details_modal', array($this, 'ajax_render_booking_details_modal'));
     }
 
     /**
@@ -64,9 +49,17 @@ final class Frontend
 
             if ($product && $product->get_type() === 'visitas') {
                 \wp_enqueue_script(
+                        'rinac-ajax-client',
+                        RINAC_PLUGIN_URL . 'assets/js/ajax-client.js',
+                        array('jquery'),
+                        RINAC_VERSION,
+                        true
+                    );
+
+                    \wp_enqueue_script(
                     'rinac-frontend',
                     RINAC_PLUGIN_URL . 'assets/js/frontend.js',
-                    array('jquery', 'jquery-ui-datepicker'),
+                        array('jquery', 'jquery-ui-datepicker', 'rinac-ajax-client'),
                     RINAC_VERSION,
                     true
                 );
@@ -426,8 +419,9 @@ final class Frontend
     {
         \check_ajax_referer('rinac_nonce', 'nonce');
 
-        $product_id = intval($_POST['product_id']);
-        $fecha = \sanitize_text_field($_POST['fecha']);
+        $post = (isset($GLOBALS['_POST']) && \is_array($GLOBALS['_POST'])) ? $GLOBALS['_POST'] : array();
+        $product_id = isset($post['product_id']) ? intval($post['product_id']) : 0;
+        $fecha = isset($post['fecha']) ? \sanitize_text_field($post['fecha']) : '';
 
         if (!$product_id || !$fecha) {
             \wp_send_json_error(__('Datos incompletos', 'rinac'));
@@ -478,10 +472,11 @@ final class Frontend
     {
         \check_ajax_referer('rinac_frontend_nonce', 'nonce');
 
-        $product_id = intval($_POST['product_id']);
-        $fecha = \sanitize_text_field($_POST['fecha']);
-        $horario = \sanitize_text_field($_POST['horario']);
-        $personas = intval($_POST['personas']);
+        $post = (isset($GLOBALS['_POST']) && \is_array($GLOBALS['_POST'])) ? $GLOBALS['_POST'] : array();
+        $product_id = isset($post['product_id']) ? intval($post['product_id']) : 0;
+        $fecha = isset($post['fecha']) ? \sanitize_text_field($post['fecha']) : '';
+        $horario = isset($post['horario']) ? \sanitize_text_field($post['horario']) : '';
+        $personas = isset($post['personas']) ? intval($post['personas']) : 0;
 
         $max_personas = $this->get_max_personas_for_slot($product_id, $horario);
         $personas_reservadas = $this->get_reserved_persons($product_id, $fecha, $horario);
@@ -554,7 +549,8 @@ final class Frontend
     {
         \check_ajax_referer('rinac_nonce', 'nonce');
 
-        $product_id = intval($_POST['product_id']);
+        $post = (isset($GLOBALS['_POST']) && \is_array($GLOBALS['_POST'])) ? $GLOBALS['_POST'] : array();
+        $product_id = isset($post['product_id']) ? intval($post['product_id']) : 0;
 
         if (!$product_id) {
             \wp_die(__('ID de producto inválido', 'rinac'));
@@ -574,7 +570,8 @@ final class Frontend
     {
         \check_ajax_referer('rinac_nonce', 'nonce');
 
-        $booking_id = intval($_POST['booking_id']);
+        $post = (isset($GLOBALS['_POST']) && \is_array($GLOBALS['_POST'])) ? $GLOBALS['_POST'] : array();
+        $booking_id = isset($post['booking_id']) ? intval($post['booking_id']) : 0;
 
         if (!$booking_id) {
             \wp_die(__('ID de reserva inválido', 'rinac'));

@@ -98,32 +98,24 @@ jQuery(document).ready(function($) {
          */
         function editRango(rangoId) {
             showLoading();
-            
-            $.ajax({
-                url: rinac_admin.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'rinac_get_rango_details',
-                    rango_id: rangoId,
-                    nonce: rinac_admin.nonce
-                },
-                success: function(response) {
+
+            window.RinacAjax.read(
+                rinac_admin,
+                'get_rango_details',
+                { rango_id: rangoId },
+                function(data) {
                     hideLoading();
-                    
-                    if (response.success) {
-                        populateEditForm(response.data);
-                        $('html, body').animate({
-                            scrollTop: $('#rinac-form-section').offset().top - 50
-                        }, 500);
-                    } else {
-                        showNotification(response.data.message || rinac_admin.strings.error_general, 'error');
-                    }
+
+                    populateEditForm(data);
+                    $('html, body').animate({
+                        scrollTop: $('#rinac-form-section').offset().top - 50
+                    }, 500);
                 },
-                error: function() {
+                function(err) {
                     hideLoading();
-                    showNotification(rinac_admin.strings.error_general, 'error');
+                    showNotification((err && err.message) ? err.message : rinac_admin.strings.error_general, 'error');
                 }
-            });
+            );
         }
         
         /**
@@ -131,32 +123,24 @@ jQuery(document).ready(function($) {
          */
         function deleteRango(rangoId) {
             showLoading();
-            
-            $.ajax({
-                url: rinac_admin.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'rinac_delete_rango',
-                    rango_id: rangoId,
-                    nonce: rinac_admin.nonce
-                },
-                success: function(response) {
+
+            window.RinacAjax.write(
+                rinac_admin,
+                'delete_rango',
+                { rango_id: rangoId },
+                function(data) {
                     hideLoading();
-                    
-                    if (response.success) {
-                        $('.rinac-rango-item[data-id="' + rangoId + '"]').fadeOut(300, function() {
-                            $(this).remove();
-                        });
-                        showNotification(response.data.message, 'success');
-                    } else {
-                        showNotification(response.data.message || rinac_admin.strings.error_general, 'error');
-                    }
+
+                    $('.rinac-rango-item[data-id="' + rangoId + '"]').fadeOut(300, function() {
+                        $(this).remove();
+                    });
+                    showNotification(data.message, 'success');
                 },
-                error: function() {
+                function(err) {
                     hideLoading();
-                    showNotification(rinac_admin.strings.error_general, 'error');
+                    showNotification((err && err.message) ? err.message : rinac_admin.strings.error_general, 'error');
                 }
-            });
+            );
         }
         
         /**
@@ -245,34 +229,24 @@ jQuery(document).ready(function($) {
          */
         function executeBulkAction(action, items) {
             showLoading();
-            
-            $.ajax({
-                url: rinac_admin.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'rinac_bulk_action',
-                    bulk_action: action,
-                    items: items,
-                    nonce: rinac_admin.nonce
-                },
-                success: function(response) {
+
+            window.RinacAjax.write(
+                rinac_admin,
+                'bulk_action',
+                { bulk_action: action, items: items },
+                function(data) {
                     hideLoading();
-                    
-                    if (response.success) {
-                        showNotification(response.data.message, 'success');
-                        // Recargar página después de un momento
-                        setTimeout(function() {
-                            location.reload();
-                        }, 1500);
-                    } else {
-                        showNotification(response.data.message || rinac_admin.strings.error_general, 'error');
-                    }
+
+                    showNotification(data.message, 'success');
+                    setTimeout(function() {
+                        location.reload();
+                    }, 1500);
                 },
-                error: function() {
+                function(err) {
                     hideLoading();
-                    showNotification(rinac_admin.strings.error_general, 'error');
+                    showNotification((err && err.message) ? err.message : rinac_admin.strings.error_general, 'error');
                 }
-            });
+            );
         }
     }
     

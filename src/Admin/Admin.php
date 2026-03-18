@@ -27,13 +27,6 @@ final class Admin
 
         // Cargar scripts y estilos de admin
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
-
-        // AJAX para obtener horas de un rango
-        add_action('wp_ajax_rinac_get_rango_horas', array($this, 'ajax_get_rango_horas'));
-
-        // AJAX para gestión de rangos horarios
-        add_action('wp_ajax_rinac_save_rango', array($this, 'ajax_save_rango'));
-        add_action('wp_ajax_rinac_delete_rango', array($this, 'ajax_delete_rango'));
     }
 
     /**
@@ -103,9 +96,17 @@ final class Admin
         // Cargar en páginas del plugin
         if (strpos($hook, 'rinac') !== false) {
             wp_enqueue_script(
+                'rinac-ajax-client',
+                RINAC_PLUGIN_URL . 'assets/js/ajax-client.js',
+                array('jquery'),
+                RINAC_VERSION,
+                true
+            );
+
+            wp_enqueue_script(
                 'rinac-admin',
                 RINAC_PLUGIN_URL . 'assets/js/admin.js',
-                array('jquery', 'jquery-ui-sortable'),
+                array('jquery', 'jquery-ui-sortable', 'rinac-ajax-client'),
                 RINAC_VERSION,
                 true
             );
@@ -123,9 +124,17 @@ final class Admin
             isset($post) && $post->post_type == 'product') {
 
             wp_enqueue_script(
+                'rinac-ajax-client',
+                RINAC_PLUGIN_URL . 'assets/js/ajax-client.js',
+                array('jquery'),
+                RINAC_VERSION,
+                true
+            );
+
+            wp_enqueue_script(
                 'rinac-product',
                 RINAC_PLUGIN_URL . 'assets/js/product.js',
-                array('jquery', 'jquery-ui-sortable', 'jquery-ui-datepicker'),
+                array('jquery', 'jquery-ui-sortable', 'jquery-ui-datepicker', 'rinac-ajax-client'),
                 RINAC_VERSION,
                 true
             );
@@ -177,7 +186,7 @@ final class Admin
         );
 
         // Renderizar dashboard usando plantilla
-        echo \RINAC_Template_Helper::get_template('admin/dashboard.php', $template_data);
+        echo \Rinac\Template\TemplateHelper::get_template('admin/dashboard.php', $template_data);
     }
 
     /**
@@ -235,6 +244,17 @@ final class Admin
     {
         global $wpdb;
 
+        if (!current_user_can('manage_woocommerce')) {
+            wp_die(__('No tienes permisos para acceder a esta página.', 'rinac'));
+        }
+
+        $this->ensure_rangos_schema();
+
+        // Procesar borrado por GET (con nonce)
+        if (isset($_GET['action'], $_GET['rango_id']) && $_GET['action'] === 'rinac_delete_rango') {
+            $this->process_rango_delete(intval($_GET['rango_id']));
+        }
+
         // Procesar formulario si se envió
         if (isset($_POST['submit_rango']) && wp_verify_nonce($_POST['rinac_nonce'], 'rinac_rangos')) {
             $this->process_rango_form();
@@ -242,7 +262,7 @@ final class Admin
 
         // Obtener rangos existentes
         $table_rangos = $wpdb->prefix . 'rinac_rangos_horarios';
-        $rangos = $wpdb->get_results("SELECT * FROM $table_rangos ORDER BY nombre");
+        $rangos = $wpdb->get_results("SELECT id, nombre, estado FROM $table_rangos ORDER BY nombre", ARRAY_A);
 
         // Determinar si estamos editando un rango específico
         $rango_id = isset($_GET['rango_id']) ? intval($_GET['rango_id']) : null;
@@ -251,16 +271,21 @@ final class Admin
 
         if ($rango_id) {
             $rango_data = $wpdb->get_row($wpdb->prepare(
-                "SELECT * FROM $table_rangos WHERE id = %d",
+                "SELECT id, nombre, estado FROM $table_rangos WHERE id = %d",
                 $rango_id
-            ));
+            ), ARRAY_A);
+        }
 
-            if ($rango_data) {
-                $table_horas = $wpdb->prefix . 'rinac_horas';
-                $horas = $wpdb->get_results($wpdb->prepare(
-                    "SELECT * FROM $table_horas WHERE rango_id = %d ORDER BY orden",
-                    $rango_id
+        // Preparar conteo de productos por rango
+        $productos_por_rango = array();
+        if (!empty($rangos)) {
+            $table_producto_horas = $wpdb->prefix . 'rinac_producto_horas';
+            foreach ($rangos as $rango) {
+                $count = $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(DISTINCT product_id) FROM $table_producto_horas WHERE rango_id = %d",
+                    intval($rango['id'])
                 ));
+                $productos_por_rango[intval($rango['id'])] = intval($count);
             }
         }
 
@@ -269,6 +294,7 @@ final class Admin
             'rango_id' => $rango_id,
             'rango_data' => $rango_data,
             'horas' => $horas,
+            'productos_por_rango' => $productos_por_rango,
             'strings' => array(
                 'page_title' => __('Gestión de Rangos Horarios', 'rinac'),
                 'add_new_range' => __('Añadir Nuevo Rango', 'rinac'),
@@ -284,7 +310,7 @@ final class Admin
             )
         );
 
-        echo \RINAC_Template_Helper::get_template('admin/rangos-horarios-form.php', $template_data);
+        echo \Rinac\Template\TemplateHelper::get_template('admin/rangos-horarios-form.php', $template_data);
     }
 
     /**
@@ -302,7 +328,7 @@ final class Admin
             )
         );
 
-        return \RINAC_Template_Helper::get_template('admin/hora-item.php', $template_data);
+        return \Rinac\Template\TemplateHelper::get_template('admin/hora-item.php', $template_data);
     }
 
     /**
@@ -352,9 +378,9 @@ final class Admin
             )
         );
 
-        // Debug: Verificar si la función exists y el template existe
-        if (!class_exists('RINAC_Template_Helper')) {
-            echo '<div class="wrap"><h1>Error: RINAC_Template_Helper no existe</h1></div>';
+        // Verificar que el helper de plantillas está disponible
+        if (!class_exists(\Rinac\Template\TemplateHelper::class)) {
+            echo '<div class="wrap"><h1>Error: TemplateHelper no existe</h1></div>';
             return;
         }
 
@@ -364,7 +390,7 @@ final class Admin
             return;
         }
 
-        $template_output = \RINAC_Template_Helper::get_template('admin/configuracion.php', $template_data);
+        $template_output = \Rinac\Template\TemplateHelper::get_template('admin/configuracion.php', $template_data);
 
         if (empty($template_output)) {
             // Fallback si el template no genera output
@@ -412,54 +438,99 @@ final class Admin
      */
     private function process_rango_form()
     {
-        if (!isset($_POST['rango_nombre']) || empty($_POST['rango_nombre'])) {
+        if (!isset($_POST['nombre']) || empty($_POST['nombre'])) {
             return;
         }
 
         global $wpdb;
         $table_rangos = $wpdb->prefix . 'rinac_rangos_horarios';
 
-        $nombre = sanitize_text_field($_POST['rango_nombre']);
+        $nombre = sanitize_text_field($_POST['nombre']);
+        $estado = isset($_POST['estado']) && $_POST['estado'] === 'inactivo' ? 'inactivo' : 'activo';
+        $rango_id = isset($_POST['rango_id']) ? intval($_POST['rango_id']) : 0;
 
-        // Insertar rango
-        $result = $wpdb->insert(
-            $table_rangos,
-            array(
-                'nombre' => $nombre,
-                'fecha_creacion' => current_time('mysql')
-            ),
-            array('%s', '%s')
+        if ($rango_id > 0) {
+            $wpdb->update(
+                $table_rangos,
+                array(
+                    'nombre' => $nombre,
+                    'estado' => $estado
+                ),
+                array('id' => $rango_id),
+                array('%s', '%s'),
+                array('%d')
+            );
+        } else {
+            $wpdb->insert(
+                $table_rangos,
+                array(
+                    'nombre' => $nombre,
+                    'estado' => $estado
+                ),
+                array('%s', '%s')
+            );
+        }
+
+        // Evitar reenvío de formulario
+        wp_redirect(admin_url('admin.php?page=rinac-rangos'));
+        exit;
+    }
+
+    /**
+     * Asegurar que la tabla de rangos tiene las columnas necesarias
+     */
+    private function ensure_rangos_schema()
+    {
+        global $wpdb;
+        $table_rangos = $wpdb->prefix . 'rinac_rangos_horarios';
+
+        $col = $wpdb->get_var($wpdb->prepare(
+            "SHOW COLUMNS FROM $table_rangos LIKE %s",
+            'estado'
+        ));
+
+        if (!$col) {
+            // Añadir columna estado (por defecto activo)
+            $wpdb->query("ALTER TABLE $table_rangos ADD COLUMN estado varchar(20) NOT NULL DEFAULT 'activo' AFTER nombre");
+            $wpdb->query("UPDATE $table_rangos SET estado = 'activo' WHERE estado IS NULL OR estado = ''");
+        }
+    }
+
+    /**
+     * Borrar un rango horario
+     */
+    private function process_rango_delete($rango_id)
+    {
+        if ($rango_id <= 0) {
+            return;
+        }
+
+        if (!isset($_GET['_wpnonce']) || !wp_verify_nonce($_GET['_wpnonce'], 'rinac_delete_rango_' . $rango_id)) {
+            wp_die(__('Nonce inválido.', 'rinac'));
+        }
+
+        global $wpdb;
+        $table_rangos = $wpdb->prefix . 'rinac_rangos_horarios';
+        $table_horas = $wpdb->prefix . 'rinac_horas';
+        $table_producto_horas = $wpdb->prefix . 'rinac_producto_horas';
+
+        // Desvincular productos que lo usen (no borrar sus horas)
+        $wpdb->update(
+            $table_producto_horas,
+            array('rango_id' => null),
+            array('rango_id' => $rango_id),
+            array('%d'),
+            array('%d')
         );
 
-        if ($result) {
-            $rango_id = $wpdb->insert_id;
+        // Eliminar horas asociadas al rango
+        $wpdb->delete($table_horas, array('rango_id' => $rango_id), array('%d'));
 
-            // Procesar horas si se enviaron
-            if (isset($_POST['horas']) && is_array($_POST['horas'])) {
-                $table_horas = $wpdb->prefix . 'rinac_horas';
-                $orden = 0;
+        // Eliminar el rango
+        $wpdb->delete($table_rangos, array('id' => $rango_id), array('%d'));
 
-                foreach ($_POST['horas'] as $hora_data) {
-                    if (!empty($hora_data['hora']) && !empty($hora_data['capacidad'])) {
-                        $wpdb->insert(
-                            $table_horas,
-                            array(
-                                'rango_id' => $rango_id,
-                                'hora' => sanitize_text_field($hora_data['hora']),
-                                'capacidad' => intval($hora_data['capacidad']),
-                                'orden' => $orden++
-                            ),
-                            array('%d', '%s', '%d', '%d')
-                        );
-                    }
-                }
-            }
-
-            // Mostrar mensaje de éxito
-            add_action('admin_notices', function () {
-                echo '<div class="notice notice-success is-dismissible"><p>' . __('Rango horario guardado correctamente.', 'rinac') . '</p></div>';
-            });
-        }
+        wp_redirect(admin_url('admin.php?page=rinac-rangos'));
+        exit;
     }
 
     /**
@@ -469,7 +540,8 @@ final class Admin
     {
         check_ajax_referer('rinac_admin_nonce', 'nonce');
 
-        $rango_id = intval($_POST['rango_id']);
+        $post = (isset($GLOBALS['_POST']) && is_array($GLOBALS['_POST'])) ? $GLOBALS['_POST'] : array();
+        $rango_id = isset($post['rango_id']) ? intval($post['rango_id']) : 0;
 
         if (!$rango_id) {
             wp_die(__('ID de rango inválido', 'rinac'));
@@ -494,8 +566,9 @@ final class Admin
         check_ajax_referer('rinac_admin_nonce', 'nonce');
 
         // Lógica similar a process_rango_form pero para AJAX
-        $nombre = sanitize_text_field($_POST['nombre']);
-        $horas = isset($_POST['horas']) ? $_POST['horas'] : array();
+        $post = (isset($GLOBALS['_POST']) && is_array($GLOBALS['_POST'])) ? $GLOBALS['_POST'] : array();
+        $nombre = isset($post['nombre']) ? sanitize_text_field($post['nombre']) : '';
+        $horas = isset($post['horas']) ? $post['horas'] : array();
 
         global $wpdb;
         $table_rangos = $wpdb->prefix . 'rinac_rangos_horarios';
@@ -526,7 +599,8 @@ final class Admin
     {
         check_ajax_referer('rinac_admin_nonce', 'nonce');
 
-        $rango_id = intval($_POST['rango_id']);
+        $post = (isset($GLOBALS['_POST']) && is_array($GLOBALS['_POST'])) ? $GLOBALS['_POST'] : array();
+        $rango_id = isset($post['rango_id']) ? intval($post['rango_id']) : 0;
 
         if (!$rango_id) {
             wp_send_json_error(__('ID de rango inválido', 'rinac'));
