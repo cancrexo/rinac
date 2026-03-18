@@ -278,7 +278,7 @@ GPL v2 o posterior. Ver archivo LICENSE para más detalles.
 
 ## Créditos
 
-Desarrollado por Adegaeidos para la gestión de reservas de enoturismo y experiencias.
+Desarrollado por Daniel Prol "cancrexo" para la gestión de reservas de enoturismo y experiencias.
 
 ---
 
