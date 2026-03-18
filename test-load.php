@@ -31,31 +31,36 @@ if (!function_exists('deactivate_plugins')) {
 
 echo "Probando carga de la clase RINAC_Install...\n";
 
-// Intentar cargar la clase Install
+// Intentar cargar la clase Install (vía Composer)
 try {
-    require_once RINAC_PLUGIN_PATH . 'includes/class-rinac-install.php';
-    echo "✅ Clase RINAC_Install cargada correctamente\n";
+    $autoload = RINAC_PLUGIN_PATH . 'vendor/autoload.php';
+    if (!file_exists($autoload)) {
+        throw new Exception('No existe vendor/autoload.php. Ejecuta composer install --no-dev.');
+    }
+
+    require_once $autoload;
+    echo "✅ Autoload de Composer cargado correctamente\n";
     
     // Verificar que los métodos existen
-    if (method_exists('RINAC_Install', 'activate')) {
+    if (method_exists('\Rinac\Install\Install', 'activate')) {
         echo "✅ Método activate() existe\n";
     } else {
         echo "❌ Método activate() NO existe\n";
     }
     
-    if (method_exists('RINAC_Install', 'deactivate')) {
+    if (method_exists('\Rinac\Install\Install', 'deactivate')) {
         echo "✅ Método deactivate() existe\n";
     } else {
         echo "❌ Método deactivate() NO existe\n";
     }
     
-    if (method_exists('RINAC_Install', 'create_tables')) {
+    if (method_exists('\Rinac\Install\Install', 'create_tables')) {
         echo "✅ Método create_tables() existe\n";
     } else {
         echo "❌ Método create_tables() NO existe\n";
     }
     
-    if (method_exists('RINAC_Install', 'create_default_options')) {
+    if (method_exists('\Rinac\Install\Install', 'create_default_options')) {
         echo "✅ Método create_default_options() existe\n";
     } else {
         echo "❌ Método create_default_options() NO existe\n";

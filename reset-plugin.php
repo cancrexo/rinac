@@ -46,12 +46,12 @@ echo "✅ Eliminadas $deleted opciones de RINAC<br>\n";
 
 echo "<h2>📋 Paso 3: Recreando estructuras</h2>\n";
 
-// Cargar clase de instalación
-require_once RINAC_PLUGIN_PATH . 'includes/class-rinac-install.php';
+// Cargar el plugin (define constantes) + autoload de Composer
+require_once __DIR__ . '/rinac.php';
 
 // Crear tablas
 try {
-    RINAC_Install::create_tables();
+    \Rinac\Install\Install::create_tables();
     echo "✅ Tablas recreadas correctamente<br>\n";
 } catch (Exception $e) {
     echo "❌ Error al crear tablas: " . $e->getMessage() . "<br>\n";
@@ -59,7 +59,7 @@ try {
 
 // Crear opciones por defecto
 try {
-    RINAC_Install::create_default_options();
+    \Rinac\Install\Install::create_default_options();
     echo "✅ Opciones por defecto creadas<br>\n";
 } catch (Exception $e) {
     echo "❌ Error al crear opciones: " . $e->getMessage() . "<br>\n";
