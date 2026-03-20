@@ -2,7 +2,7 @@ Estoy interesado en desarrollar un  plugin de reservas para woocommcerce
 
 Será un plugin que cree productos reservables, esto es cada uno con su propio calendario de disponibilidad
 
-Tendria que crear un tipo de producto nuevo para woocommerce por ejemplo reserva (post type sjb_reserva)
+Tendria que crear un tipo de producto nuevo para woocommerce por ejemplo reserva (post type rinac_reserva)
 
 Cada producto de este tipo tendria asociado un calendario de disponibilidad para poder escoger las fechas y/o horas
 
@@ -13,11 +13,11 @@ Los productos se podrian reservas por:
 - por un rango de fechas y horas (se reserva varios dias todos a la misma hora o rango de horas)
  
 
-La idea es que me sirva para craer por ejemplo, reservas hoteleras, reservas de actividades, reservas de transportes, reservas de restaurantes, reservas de eventos, etc.
+La idea es que me sirva para creer por ejemplo, reservas hoteleras, reservas de actividades, reservas de transportes, reservas de restaurantes, reservas de eventos, etc.
 
 _Por ejemplo, para una bodega:_
-- el usuario podría crear un producto woocommerce de tipo "RESERVA", post type sjb_reserva (p.e., "Mi visita a la Bodega" )con su propio calendario de disponibilidad. 
-- La reserva se podria realizar ciertos días en ciertos slots (horas) definidos. Por ejemplo "mañana" "tarde" "noche" o bien esos slots llamarlos "11:00 - 12:00", "12:00 - 13:00", "13:00 - 14:00", etc. Eso se definiria a la hora de crear el producto en base a ciertos slots ya definidos previamente aunque se podría crear nuevos slots en cualquier momento. Entiendo que tendriamos que crear un post type para los slots (sjb_slot) y que se puedan crear nuevos slots en cualquier momento. quizas un gestionador de slots en el panel de admin.
+- el usuario podría crear un producto woocommerce de tipo "RESERVA", post type rinac_reserva (p.e., "Mi visita a la Bodega" )con su propio calendario de disponibilidad. 
+- La reserva se podria realizar ciertos días en ciertos slots (horas) definidos. Por ejemplo "mañana" "tarde" "noche" o bien esos slots llamarlos "11:00 - 12:00", "12:00 - 13:00", "13:00 - 14:00", etc. Eso se definiria a la hora de crear el producto en base a ciertos slots ya definidos previamente aunque se podría crear nuevos slots en cualquier momento. Entiendo que tendriamos que crear un post type para los slots (rinac_slot) y que se puedan crear nuevos slots en cualquier momento. quizas un gestionador de slots en el panel de admin.
 - El tipo de particpantes lo he definido como adulto y niño pero quizas será mejor definir una serie de tipos de participantes (p.e., adulto, niño, bebe, etc.) y que se puedan definir los precios de cada tipo de participante y la fraccion de persona que representa.
 - El usuario podría definir los slots y sus capacidades: numero maximo/minimode personas que participan (indicando adultos, niños, bebes, etc.).
 - El usuario podría definir los precios por slot y/o por persona/niño/bebe.
@@ -41,7 +41,7 @@ _por ejemplo para un restaurante (opcion2):_
  - Indicar el precio por comensal.
  - Tendriamos que poder indicar si existen comensales con problemas de accesibilidad (silla de ruedas, etc.), alergias, intolerancias, etc.
 
-- En ambos casos se deberian poder gestionar los turnos (quizas ccreando un post type sjb_turno y que se puedan crear nevos turnos en cualquier momento). Quizas un gestionador de turnos en el panel de admin. La idea es que el sistema sirva para distintos tipos establecimientos. Por ejemplo uno que de coidas en 4 turnos otro que lo haga en 2 turnos. etc.
+- En ambos casos se deberian poder gestionar los turnos (quizas ccreando un post type rinac_turno y que se puedan crear nevos turnos en cualquier momento). Quizas un gestionador de turnos en el panel de admin. La idea es que el sistema sirva para distintos tipos establecimientos. Por ejemplo uno que de coidas en 4 turnos otro que lo haga en 2 turnos. etc.
 
 
 _por ejemplo para un servicio de alquiler de coches_
