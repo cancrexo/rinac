@@ -1,6 +1,6 @@
 {
     "name": "rinac/rinac",
-    "description": "RINAC - Rinac Is Not Another Calendar (WooCommerce bookings plugin)",
+    "description": "RINAC : Reservas Is Not Another Calendar",
     "type": "wordpress-plugin",
     "license": "GPL-2.0-or-later",
     "require": {
@@ -8,14 +8,8 @@
     },
     "autoload": {
         "psr-4": {
-            "Rinac\\": "src/"
-        },
-        "files": [
-            "src/functions.php"
-        ]
-    },
-    "config": {
-        "optimize-autoloader": true,
-        "sort-packages": true
+            "rinac\\": "src/"
+        }
     }
 }
+
