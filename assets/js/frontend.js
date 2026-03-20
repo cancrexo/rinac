@@ -49,21 +49,18 @@ jQuery(document).ready(function($) {
         
         // Las fechas ya vienen desde PHP, pero podemos recargarlas si es necesario
         if (availableDates.length === 0) {
-            $.ajax({
-                url: rinac_frontend.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'rinac_get_available_dates',
-                    product_id: productId,
-                    nonce: rinac_frontend.nonce
+            window.RinacAjax.read(
+                rinac_frontend,
+                'get_available_dates',
+                { product_id: productId },
+                function(data) {
+                    availableDates = data || [];
+                    refreshDatePicker();
                 },
-                success: function(response) {
-                    if (response.success) {
-                        availableDates = response.data;
-                        refreshDatePicker();
-                    }
+                function() {
+                    // Silencioso: si falla, el calendario ya tiene fallback con fechas precargadas (si existen).
                 }
-            });
+            );
         }
     }
     
@@ -134,29 +131,19 @@ jQuery(document).ready(function($) {
      */
     function loadAvailableTimeSlots(fecha) {
         var productId = rinac_frontend.product_id;
-        
-        $.ajax({
-            url: rinac_frontend.ajax_url,
-            type: 'POST',
-            data: {
-                action: 'rinac_get_horarios',
-                product_id: productId,
-                fecha: fecha,
-                nonce: rinac_frontend.nonce
+
+        window.RinacAjax.read(
+            rinac_frontend,
+            'get_horarios',
+            { product_id: productId, fecha: fecha },
+            function(data) {
+                populateTimeSlots(data || []);
             },
-            success: function(response) {
-                if (response.success) {
-                    populateTimeSlots(response.data);
-                } else {
-                    showError('No hay horarios disponibles para esta fecha');
-                    $('#rinac_horario').html('<option value="">No hay horarios disponibles</option>');
-                }
-            },
-            error: function() {
+            function() {
                 showError('Error al cargar los horarios');
                 $('#rinac_horario').html('<option value="">Error al cargar horarios</option>');
             }
-        });
+        );
     }
     
     /**
@@ -383,39 +370,33 @@ jQuery(document).ready(function($) {
         if (isValidating) return;
         
         isValidating = true;
-        
-        $.ajax({
-            url: rinac_frontend.ajax_url,
-            type: 'POST',
-            data: {
-                action: 'rinac_check_availability',
+
+        window.RinacAjax.read(
+            rinac_frontend,
+            'check_availability',
+            {
                 product_id: rinac_frontend.product_id,
                 fecha: bookingData.fecha,
                 horario: bookingData.horario,
-                personas: bookingData.personas,
-                nonce: rinac_frontend.nonce
+                personas: bookingData.personas
             },
-            success: function(response) {
+            function(data) {
                 isValidating = false;
-                
-                if (response.success) {
-                    var data = response.data;
-                    
-                    if (!data.available) {
-                        showError('No hay suficiente disponibilidad para ' + bookingData.personas + ' personas');
-                        updateAvailabilityInfo(data.disponibles, data.max_personas);
-                        $('.single_add_to_cart_button').prop('disabled', true);
-                    } else {
-                        hideError();
-                        updateAvailabilityInfo(data.disponibles, data.max_personas);
-                        $('.single_add_to_cart_button').prop('disabled', false);
-                    }
+
+                if (!data.available) {
+                    showError('No hay suficiente disponibilidad para ' + bookingData.personas + ' personas');
+                    updateAvailabilityInfo(data.disponibles, data.max_personas);
+                    $('.single_add_to_cart_button').prop('disabled', true);
+                } else {
+                    hideError();
+                    updateAvailabilityInfo(data.disponibles, data.max_personas);
+                    $('.single_add_to_cart_button').prop('disabled', false);
                 }
             },
-            error: function() {
+            function() {
                 isValidating = false;
             }
-        });
+        );
     }
     
     /**

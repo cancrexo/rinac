@@ -94,32 +94,25 @@ jQuery(document).ready(function($) {
             
             showCalendarLoading();
             
-            $.ajax({
-                url: rinac_admin.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'rinac_get_calendar_data',
+            window.RinacAjax.read(
+                rinac_admin,
+                'get_calendar_data',
+                {
                     product_id: productId,
                     year: currentYear,
-                    month: currentMonth + 1,
-                    nonce: rinac_admin.nonce
+                    month: currentMonth + 1
                 },
-                success: function(response) {
+                function(data) {
                     hideCalendarLoading();
-                    
-                    if (response.success) {
-                        $('#rinac-calendar').html(response.data.calendar_html);
-                        calendarData = response.data;
-                        bindCalendarEvents();
-                    } else {
-                        showCalendarError('Error al cargar el calendario');
-                    }
+                    $('#rinac-calendar').html(data.calendar_html);
+                    calendarData = data;
+                    bindCalendarEvents();
                 },
-                error: function() {
+                function() {
                     hideCalendarLoading();
                     showCalendarError('Error de conexión al cargar el calendario');
                 }
-            });
+            );
         }
         
         /**
@@ -183,36 +176,30 @@ jQuery(document).ready(function($) {
             var $day = $('.rinac-day[data-date="' + fecha + '"]');
             $day.addClass('rinac-updating');
             
-            $.ajax({
-                url: rinac_admin.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'rinac_save_calendar_data',
+            window.RinacAjax.write(
+                rinac_admin,
+                'save_calendar_data',
+                {
                     product_id: productId,
                     date: fecha,
-                    disponible: available ? 1 : 0,
-                    nonce: rinac_admin.nonce
+                    disponible: available ? 1 : 0
                 },
-                success: function(response) {
+                function() {
                     $day.removeClass('rinac-updating');
                     
-                    if (response.success) {
-                        if (available) {
-                            $day.removeClass('rinac-day-unavailable').addClass('rinac-day-available');
-                        } else {
-                            $day.removeClass('rinac-day-available').addClass('rinac-day-unavailable');
-                        }
-                        
-                        showCalendarSuccess('Disponibilidad actualizada');
+                    if (available) {
+                        $day.removeClass('rinac-day-unavailable').addClass('rinac-day-available');
                     } else {
-                        showCalendarError(response.data.message || 'Error al actualizar');
+                        $day.removeClass('rinac-day-available').addClass('rinac-day-unavailable');
                     }
+                    
+                    showCalendarSuccess('Disponibilidad actualizada');
                 },
-                error: function() {
+                function(err) {
                     $day.removeClass('rinac-updating');
-                    showCalendarError('Error de conexión');
+                    showCalendarError((err && err.message) ? err.message : 'Error de conexión');
                 }
-            });
+            );
         }
         
         /**
@@ -445,17 +432,13 @@ jQuery(document).ready(function($) {
          * Añadir rango predefinido
          */
         function addRangoPredefinido(rangoId) {
-            $.ajax({
-                url: rinac_admin.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'rinac_get_rango_horas',
-                    rango_id: rangoId,
-                    nonce: rinac_admin.nonce
-                },
-                success: function(response) {
-                    if (response.success && response.data.length > 0) {
-                        response.data.forEach(function(hora) {
+            window.RinacAjax.read(
+                rinac_admin,
+                'get_rango_horas',
+                { rango_id: rangoId },
+                function(data) {
+                    if (data && data.length > 0) {
+                        data.forEach(function(hora) {
                             addHorarioItem(hora.descripcion, hora.maximo_personas_slot);
                         });
                         
@@ -467,10 +450,10 @@ jQuery(document).ready(function($) {
                         showHorariosMessage('No se pudieron obtener los horarios del rango', 'error');
                     }
                 },
-                error: function() {
+                function() {
                     showHorariosMessage('Error al obtener los horarios', 'error');
                 }
-            });
+            );
         }
         
         /**

@@ -1,22 +1,20 @@
 <?php
-/**
- * Clase para manejar la instalación y configuración inicial del plugin
- */
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+declare(strict_types=1);
 
-class RINAC_Install {
-    
+namespace Rinac\Install;
+
+final class Install
+{
     /**
      * Crear tablas de base de datos
      */
-    public static function create_tables() {
+    public static function create_tables()
+    {
         global $wpdb;
-        
+
         $charset_collate = $wpdb->get_charset_collate();
-        
+
         // Tabla para rangos horarios globales
         $table_rangos = $wpdb->prefix . 'rinac_rangos_horarios';
         $sql_rangos = "CREATE TABLE $table_rangos (
@@ -26,7 +24,7 @@ class RINAC_Install {
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id)
         ) $charset_collate;";
-        
+
         // Tabla para horas dentro de cada rango
         $table_horas = $wpdb->prefix . 'rinac_horas';
         $sql_horas = "CREATE TABLE $table_horas (
@@ -40,7 +38,7 @@ class RINAC_Install {
             PRIMARY KEY (id),
             KEY rango_id (rango_id)
         ) $charset_collate;";
-        
+
         // Tabla para disponibilidad de fechas por producto
         $table_disponibilidad = $wpdb->prefix . 'rinac_disponibilidad';
         $sql_disponibilidad = "CREATE TABLE $table_disponibilidad (
@@ -55,7 +53,7 @@ class RINAC_Install {
             KEY product_id (product_id),
             KEY fecha (fecha)
         ) $charset_collate;";
-        
+
         // Tabla para horas asignadas a productos específicos
         $table_producto_horas = $wpdb->prefix . 'rinac_producto_horas';
         $sql_producto_horas = "CREATE TABLE $table_producto_horas (
@@ -71,7 +69,7 @@ class RINAC_Install {
             KEY product_id (product_id),
             KEY hora (hora)
         ) $charset_collate;";
-        
+
         // Tabla para reservas realizadas
         $table_reservas = $wpdb->prefix . 'rinac_reservas';
         $sql_reservas = "CREATE TABLE $table_reservas (
@@ -96,25 +94,26 @@ class RINAC_Install {
             KEY fecha_reserva (fecha_reserva),
             KEY status (status)
         ) $charset_collate;";
-        
+
         // Incluir la función dbDelta de WordPress
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-        
+
         // Ejecutar las consultas
         dbDelta($sql_rangos);
         dbDelta($sql_horas);
         dbDelta($sql_disponibilidad);
         dbDelta($sql_producto_horas);
         dbDelta($sql_reservas);
-        
+
         // Guardar versión de la base de datos
         update_option('rinac_db_version', RINAC_VERSION);
     }
-    
+
     /**
      * Crear opciones por defecto
      */
-    public static function create_default_options() {
+    public static function create_default_options()
+    {
         // Configuraciones por defecto
         $default_options = array(
             'rinac_maximo_personas_hora_default' => 10,
@@ -123,32 +122,80 @@ class RINAC_Install {
             'rinac_require_phone' => false,
             'rinac_calendario_start_day' => 1
         );
-        
+
         foreach ($default_options as $option_name => $default_value) {
             if (get_option($option_name) === false) {
                 update_option($option_name, $default_value);
             }
         }
-        
+
         // Actualizar versión de la base de datos
         update_option('rinac_db_version', '1.0.0');
-        
+
         // Crear datos de ejemplo
         self::create_sample_data();
     }
-    
+
+    /**
+     * Eliminar tablas del plugin (usado en desinstalación)
+     */
+    public static function drop_tables()
+    {
+        global $wpdb;
+
+        $tables = array(
+            $wpdb->prefix . 'rinac_reservas',
+            $wpdb->prefix . 'rinac_producto_horas',
+            $wpdb->prefix . 'rinac_disponibilidad',
+            $wpdb->prefix . 'rinac_horas',
+            $wpdb->prefix . 'rinac_rangos_horarios'
+        );
+
+        foreach ($tables as $table) {
+            $wpdb->query("DROP TABLE IF EXISTS $table");
+        }
+
+        // Eliminar opciones
+        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE 'rinac_%'");
+    }
+
+    /**
+     * Activar plugin
+     */
+    public static function activate()
+    {
+        // Crear tablas de base de datos
+        self::create_tables();
+
+        // Configuración inicial
+        self::create_default_options();
+
+        // Flush rewrite rules
+        flush_rewrite_rules();
+    }
+
+    /**
+     * Desactivar plugin
+     */
+    public static function deactivate()
+    {
+        // Flush rewrite rules
+        flush_rewrite_rules();
+    }
+
     /**
      * Crear datos de ejemplo
      */
-    private static function create_sample_data() {
+    private static function create_sample_data()
+    {
         global $wpdb;
-        
+
         $table_rangos = $wpdb->prefix . 'rinac_rangos_horarios';
         $table_horas = $wpdb->prefix . 'rinac_horas';
-        
+
         // Verificar si ya existen rangos
         $existing_ranges = $wpdb->get_var("SELECT COUNT(*) FROM $table_rangos");
-        
+
         if ($existing_ranges == 0) {
             // Crear rango de ejemplo
             $wpdb->insert(
@@ -157,20 +204,20 @@ class RINAC_Install {
                     'nombre' => 'Horario Estándar'
                 )
             );
-            
+
             $rango_id = $wpdb->insert_id;
-            
+
             // Crear horas de ejemplo con la estructura correcta
             $horas_ejemplo = array(
                 '10:00:00',
-                '11:30:00', 
+                '11:30:00',
                 '16:00:00',
                 '17:30:00'
             );
-            
+
             $capacidad_default = get_option('rinac_maximo_personas_hora_default', 10);
             $orden = 1;
-            
+
             foreach ($horas_ejemplo as $hora) {
                 $wpdb->insert(
                     $table_horas,
@@ -185,48 +232,5 @@ class RINAC_Install {
             }
         }
     }
-    
-    /**
-     * Eliminar tablas del plugin (usado en desinstalación)
-     */
-    public static function drop_tables() {
-        global $wpdb;
-        
-        $tables = array(
-            $wpdb->prefix . 'rinac_reservas',
-            $wpdb->prefix . 'rinac_producto_horas',
-            $wpdb->prefix . 'rinac_disponibilidad',
-            $wpdb->prefix . 'rinac_horas',
-            $wpdb->prefix . 'rinac_rangos_horarios'
-        );
-        
-        foreach ($tables as $table) {
-            $wpdb->query("DROP TABLE IF EXISTS $table");
-        }
-        
-        // Eliminar opciones
-        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE 'rinac_%'");
-    }
-    
-    /**
-     * Activar plugin
-     */
-    public static function activate() {
-        // Crear tablas de base de datos
-        self::create_tables();
-        
-        // Configuración inicial
-        self::create_default_options();
-        
-        // Flush rewrite rules
-        flush_rewrite_rules();
-    }
-    
-    /**
-     * Desactivar plugin
-     */
-    public static function deactivate() {
-        // Flush rewrite rules
-        flush_rewrite_rules();
-    }
 }
+

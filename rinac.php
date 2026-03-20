@@ -29,29 +29,41 @@ define('RINAC_PLUGIN_BASENAME', plugin_basename(__FILE__));
 define('RINAC_PLUGIN_PATH', plugin_dir_path(__FILE__));
 define('RINAC_PLUGIN_URL', plugin_dir_url(__FILE__));
 
+// Cargar autoload de Composer (si existe).
+// Nota: `vendor/` no se versiona, así que en despliegue debe ejecutarse `composer install --no-dev`.
+$rinac_autoload = RINAC_PLUGIN_PATH . 'vendor/autoload.php';
+if (file_exists($rinac_autoload)) {
+    require_once $rinac_autoload;
+} else {
+    // Sin autoload no se puede ejecutar el plugin (no versionamos `vendor/`).
+    add_action('admin_notices', static function () {
+        echo '<div class="notice notice-warning"><p>';
+        echo esc_html__('RINAC: falta el autoload de Composer. Ejecuta "composer install --no-dev" en la carpeta del plugin.', 'rinac');
+        echo '</p></div>';
+    });
+    return;
+}
+
 /**
  * Clase principal del plugin RINAC
  */
 class RINAC {
-    
+
     /**
      * Instancia única del plugin (Singleton)
      */
     private static $instance = null;
-    
+
     /**
      * Constructor privado para implementar Singleton
      */
     private function __construct() {
-        // Incluir clase de instalación antes de registrar hooks
-        require_once RINAC_PLUGIN_PATH . 'includes/class-rinac-install.php';
-        
         // Declarar compatibilidad con WooCommerce
         $this->declare_woocommerce_compatibility();
-        
+
         $this->init_hooks();
     }
-    
+
     /**
      * Obtener instancia única del plugin
      */
@@ -61,24 +73,24 @@ class RINAC {
         }
         return self::$instance;
     }
-    
+
     /**
      * Inicializar hooks y acciones
      */
     private function init_hooks() {
         // Hook de activación del plugin
         register_activation_hook(__FILE__, array($this, 'activate'));
-        
+
         // Hook de desactivación del plugin
         register_deactivation_hook(__FILE__, array($this, 'deactivate'));
-        
+
         // Inicializar plugin después de que WordPress esté completamente cargado
         add_action('plugins_loaded', array($this, 'init'));
-        
+
         // Verificar si WooCommerce está activo
         add_action('admin_init', array($this, 'check_woocommerce'));
     }
-    
+
     /**
      * Inicializar el plugin
      */
@@ -87,20 +99,25 @@ class RINAC {
         if (!$this->check_dependencies()) {
             return;
         }
-        
+
         // Cargar archivos necesarios
         $this->includes();
-        
+
+        // Arrancar el núcleo namespaced (si está disponible vía autoload).
+        if (class_exists(\Rinac\Plugin::class)) {
+            \Rinac\Plugin::instance();
+        }
+
         // Inicializar clases
         $this->init_classes();
-        
+
         // Cargar textdomain para traducciones
         $this->load_textdomain();
-        
+
         // Hook para cuando el plugin esté completamente inicializado
         do_action('rinac_loaded');
     }
-    
+
     /**
      * Verificar dependencias del plugin
      */
@@ -110,49 +127,44 @@ class RINAC {
             add_action('admin_notices', array($this, 'woocommerce_missing_notice'));
             return false;
         }
-        
+
         return true;
     }
-    
+
     /**
      * Incluir archivos necesarios
      */
     private function includes() {
-        // Incluir clases principales (Install ya está incluida en el constructor)
-        require_once RINAC_PLUGIN_PATH . 'includes/class-rinac-product-type.php';
-        require_once RINAC_PLUGIN_PATH . 'includes/class-rinac-admin.php';
-        require_once RINAC_PLUGIN_PATH . 'includes/class-rinac-frontend.php';
-        require_once RINAC_PLUGIN_PATH . 'includes/class-rinac-calendar.php';
-        require_once RINAC_PLUGIN_PATH . 'includes/class-rinac-validation.php';
-        require_once RINAC_PLUGIN_PATH . 'includes/class-rinac-database.php';
-        require_once RINAC_PLUGIN_PATH . 'includes/class-rinac-template-helper.php';
-        require_once RINAC_PLUGIN_PATH . 'includes/functions.php';
+        // Sin includes manuales: todo se carga vía Composer (PSR-4 + autoload.files).
     }
-    
+
     /**
      * Inicializar clases del plugin
      */
     private function init_classes() {
+        // Centralizar endpoints AJAX (admin + frontend).
+        new \Rinac\Ajax\AjaxRequests();
+
         // Inicializar tipo de producto
-        new RINAC_Product_Type();
-        
+        new \Rinac\Product\ProductType();
+
         // Inicializar administración
         if (is_admin()) {
-            new RINAC_Admin();
+            new \Rinac\Admin\Admin();
         }
-        
+
         // Inicializar frontend
         if (!is_admin()) {
-            new RINAC_Frontend();
+            new \Rinac\Frontend\Frontend();
         }
-        
+
         // Inicializar validación (tanto admin como frontend)
-        new RINAC_Validation();
-        
+        new \Rinac\Validation\Validation();
+
         // Inicializar calendario
-        new RINAC_Calendar();
+        new \Rinac\Calendar\Calendar();
     }
-    
+
     /**
      * Cargar traducciones
      */
@@ -163,7 +175,7 @@ class RINAC {
             dirname(RINAC_PLUGIN_BASENAME) . '/languages'
         );
     }
-    
+
     /**
      * Verificar si WooCommerce está activo
      */
@@ -172,7 +184,7 @@ class RINAC {
             deactivate_plugins(RINAC_PLUGIN_BASENAME);
         }
     }
-    
+
     /**
      * Activación del plugin
      */
@@ -182,19 +194,19 @@ class RINAC {
             deactivate_plugins(RINAC_PLUGIN_BASENAME);
             wp_die(__('RINAC requiere que WooCommerce esté instalado y activado.', 'rinac'));
         }
-        
+
         // Llamar al método de activación
-        RINAC_Install::activate();
+        \Rinac\Install\Install::activate();
     }
-    
+
     /**
      * Desactivación del plugin
      */
     public function deactivate() {
         // Llamar al método de desactivación
-        RINAC_Install::deactivate();
+        \Rinac\Install\Install::deactivate();
     }
-    
+
     /**
      * Aviso de WooCommerce faltante
      */
@@ -203,7 +215,7 @@ class RINAC {
         echo __('RINAC requiere que WooCommerce esté instalado y activado.', 'rinac');
         echo '</p></div>';
     }
-    
+
     /**
      * Declarar compatibilidad con WooCommerce
      */
@@ -217,7 +229,7 @@ class RINAC {
                     __FILE__,
                     true
                 );
-                
+
                 // Cart and Checkout Blocks
                 \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility(
                     'cart_checkout_blocks',

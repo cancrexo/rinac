@@ -11,56 +11,56 @@ if (!defined('ABSPATH')) {
  * Renderizar plantilla RINAC
  */
 function rinac_get_template($template_name, $data = array()) {
-    return RINAC_Template_Helper::get_template($template_name, $data);
+    return \Rinac\Template\TemplateHelper::get_template($template_name, $data);
 }
 
 /**
  * Incluir plantilla RINAC directamente
  */
 function rinac_include_template($template_name, $data = array()) {
-    RINAC_Template_Helper::include_template($template_name, $data);
+    \Rinac\Template\TemplateHelper::include_template($template_name, $data);
 }
 
 /**
  * Localizar plantilla RINAC
  */
 function rinac_locate_template($template_name) {
-    return RINAC_Template_Helper::locate_template($template_name);
+    return \Rinac\Template\TemplateHelper::locate_template($template_name);
 }
 
 /**
  * Renderizar modal RINAC
  */
 function rinac_render_modal($modal_id, $title, $content, $size = 'medium') {
-    return RINAC_Template_Helper::render_modal($modal_id, $title, $content, $size);
+    return \Rinac\Template\TemplateHelper::render_modal($modal_id, $title, $content, $size);
 }
 
 /**
  * Formatear fecha RINAC
  */
 function rinac_format_date($date, $format = null) {
-    return RINAC_Template_Helper::format_date($date, $format);
+    return \Rinac\Template\TemplateHelper::format_date($date, $format);
 }
 
 /**
  * Formatear hora RINAC
  */
 function rinac_format_time($time, $format = 'H:i') {
-    return RINAC_Template_Helper::format_time($time, $format);
+    return \Rinac\Template\TemplateHelper::format_time($time, $format);
 }
 
 /**
  * Obtener clase CSS para estado de reserva
  */
 function rinac_get_booking_status_class($status) {
-    return RINAC_Template_Helper::get_booking_status_class($status);
+    return \Rinac\Template\TemplateHelper::get_booking_status_class($status);
 }
 
 /**
  * Obtener texto de estado de reserva
  */
 function rinac_get_booking_status_text($status) {
-    return RINAC_Template_Helper::get_booking_status_text($status);
+    return \Rinac\Template\TemplateHelper::get_booking_status_text($status);
 }
 
 /**
@@ -68,7 +68,7 @@ function rinac_get_booking_status_text($status) {
  */
 function rinac_is_visitas_product($product) {
     if (is_numeric($product)) {
-        $product = wc_get_product($product);
+        $product = \wc_get_product($product);
     }
     
     return $product && $product->get_type() === 'visitas';
@@ -241,3 +241,4 @@ function rinac_get_option($option_name, $default = false) {
 function rinac_update_option($option_name, $value) {
     return update_option('rinac_' . $option_name, $value);
 }
+
