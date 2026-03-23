@@ -1,0 +1,88 @@
+Eres un senior WordPress/WooCommerce developer experto en plugins complejos. Vas a crear desde cero un plugin completo llamado "RINAC" (Rinac Is Not Another Calendar) (prefijo rinac_ para todo: post types, meta keys, opciones, AJAX actions, etc.).
+
+REQUISITOS TÉCNICOS OBLIGATORIOS:
+- Usa Composer con PSR-4 autoloading (namespace RINAC\...)
+- Estructura de carpetas estándar moderna:
+  rinac/
+  ├── composer.json
+  ├── rinac.php (punto de entrada)
+  ├── src/
+  │   ├── Core/
+  │   ├── Admin/
+  │   ├── Frontend/
+  │   ├── Models/
+  │   ├── Calendar/
+  │   ├── Booking/
+  │   ├── Ajax/
+  │   └── Utils/
+  ├── assets/
+  ├── templates/
+  └── languages/
+- Centraliza TODOS los endpoints AJAX en una sola clase RINAC\Ajax\AjaxHandler (método register() + handle() con nonce y capability check)
+- Usa SIEMPRE que sea posible las funciones nativas de WordPress y WooCommerce (wc_get_product(), wc_get_order(), wc_price(), etc.)
+- Soporta WP 6.6+ y WooCommerce 9.0+
+
+MENÚ DE ADMINISTRACIÓN DE WORDPRESS:
+- Crear un menú principal llamado "RINAC" (icon: calendar-alt)
+- Dentro de este menú las siguientes subopciones (en este orden exacto):
+  1. Dashboard (resumen de reservas y ocupación)
+  2. Productos Reservables
+  3. Slots
+  4. Turnos
+  5. Tipos de Participantes
+  6. Recursos
+  7. Calendario Global
+  8. Reservas
+  9. Ajustes (incluirá el botón "Importar datos de prueba")
+- Todas las páginas deben usar las clases y funciones nativas de WordPress (add_menu_page, add_submenu_page, Screen Options, etc.)
+
+La idea es que el plugin sirva para crear reservas hoteleras, reservas de actividades, reservas de transportes, reservas de restaurantes, reservas de eventos, etc.
+
+[El resto de la descripción de casos de uso (bodega, restaurante opción1 y opción2, alquiler de coches, alquiler de habitaciones) se mantiene exactamente igual que en la versión anterior – no la repito aquí por brevedad pero debe estar incluida completa]
+
+TIPOS DE PRODUCTO Y POST PERSONALIZADOS:
+- rinac_reserva: tipo de producto WooCommerce personalizado (NO CPT separado). Registrado correctamente con woocommerce_register_product_type y filtro woocommerce_product_class → clase RINAC\Models\ReservaProduct
+- rinac_slot → CPT con admin page independiente
+- rinac_turno → CPT con admin page independiente
+- rinac_participant_type → CPT (precio, fracción, etc.)
+- rinac_resource → CPT (precio opcional)
+- rinac_booking → CPT (relacionado con WC orders)
+
+Asegurarse en todo momento de que:
+- El tipo de producto rinac_reserva se registra correctamente y wc_get_product() devuelve una instancia de RINAC\Models\ReservaProduct
+- Todos los CPTs se registran correctamente con labels, capacidades, show_in_menu = false (porque van dentro del menú RINAC), etc.
+
+Adicionalmente, implementa manejo de datos de prueba de la siguiente forma:
+- En el paso 1 (activación del plugin): register_activation_hook para crear datos MÍNIMOS de prueba SOLO si WP_DEBUG o RINAC_LOAD_DEMO_ON_ACTIVATION
+- En Ajustes: botón "Importar datos de prueba" con advertencia roja fuerte.
+
+TAREAS QUE TE PIDO:
+ANTES de empezar con cualquier código, genera un **PLAN DE TRABAJO DETALLADO POR PUNTOS NUMERADOS** que incluya:
+- Todas las clases que se van a crear
+- Todos los archivos necesarios
+- Los hooks principales (add_action/add_filter) que se usarán
+- La estructura exacta del menú RINAC
+- Cómo se va a integrar wc_get_product() en todo el flujo
+
+Después de mostrarme ese plan detallado, desarrolla el plugin paso a paso en este orden exacto (responde con cada paso completo y luego espera mi "SIGUIENTE"):
+
+1. Configuración inicial: composer.json, rinac.php, PSR-4, activación/desactivación, registro correcto del tipo de producto rinac_reserva, registro de todos los CPTs + creación del menú "RINAC" + datos mínimos de prueba en activación
+2. Clase AjaxHandler centralizada + ejemplo de 3 endpoints
+3. Meta boxes y settings para productos de tipo rinac_reserva
+4. Lógica de disponibilidad y cálculo de capacidad (clase AvailabilityManager)
+5. Frontend booking form + FullCalendar integración
+6. Gestión de recursos y participantes
+7. Sistema de pago depósito + hooks de WooCommerce
+8. Calendario global admin + listado de reservas + botón "Importar datos de prueba"
+9. Templates y overrides
+10. Documentación completa (README.md + inline docs)
+
+Reglas estrictas:
+- Todo código limpio, comentado, con namespaces
+- Security: nonces, sanitization, capability checks
+- Performance: caches transient para disponibilidad
+- Internacionalización (i18n) desde el principio
+- No uses plugins externos de reservas (todo custom)
+- Siempre que sea posible usa funciones nativas de WooCommerce (wc_get_product(), etc.)
+
+Empieza por generar primero el PLAN DE TRABAJO DETALLADO POR PUNTOS. Cuando termine, dime "SIGUIENTE" y continuamos con el paso 1.
