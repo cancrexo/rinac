@@ -1,9 +1,12 @@
 ## Plan de trabajo (RINAC)
 
+IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar también `GROK.md` y `PLAN-NOVO-checklist.md` para mantenerlos sincronizados.
+
 ### Paso 1 del desarrollo
 
 1. **Base del plugin / bootstrap (ficheros raíz)**
    - Crear `composer.json` con autoload PSR-4 para el namespace `RINAC\...`.
+   - Los *stubs* de WordPress y WooCommerce se instalarán como `require-dev` en `vendor/` (y `vendor/` quedará ignorado en git).
    - Crear `rinac.php` como punto de entrada del plugin (define constantes, carga el autoloader de Composer y arranca la inicialización).
    - Registrar `register_activation_hook` y `register_deactivation_hook` para:
      - Crear datos mínimos de prueba SOLO si `WP_DEBUG` o `RINAC_LOAD_DEMO_ON_ACTIVATION` está activo.
@@ -102,6 +105,15 @@
    - **Requisito estricto de slugs y redirecciones**
      - Mantener `parent_slug`/`menu_slug` consistentes para que `admin.php?page=...` funcione.
      - Al usar la opción “redirigir” de `Productos Reservables` hacia el listado de WooCommerce, la URL de destino debe construirse con `admin_url()` y preservando el query var correcto (`product_type`).
+
+   - **Regla específica de lint para superglobales**
+     - Si el lint (por ejemplo intelephense) se queja de `$_POST`, `$_GET` o `$_REQUEST`:
+       - No usar `$GLOBALS`.
+       - Capturar primero en variables locales con validación de tipo:
+         - `$post = isset( $_POST ) && is_array( $_POST ) ? $_POST : array();`
+         - `$get = isset( $_GET ) && is_array( $_GET ) ? $_GET : array();`
+         - `$request = isset( $_REQUEST ) && is_array( $_REQUEST ) ? $_REQUEST : array();`
+       - Opcional: añadir `/** @noinspection PhpUndefinedVariableInspection */` justo antes de las líneas donde el lint marca `$_POST`/`$_GET`/`$_REQUEST`.
 
 6. **Integración de `wc_get_product()` en todo el flujo**
    - Regla general: siempre que haya que leer configuración/capacidad de un “producto reservable”:

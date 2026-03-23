@@ -1,7 +1,10 @@
 Eres un senior WordPress/WooCommerce developer experto en plugins complejos. Vas a crear desde cero un plugin completo llamado "RINAC" (Rinac Is Not Another Calendar) (prefijo rinac_ para todo: post types, meta keys, opciones, AJAX actions, etc.).
 
+IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar también `PLAN-NOVO-checklist.md` y `PLAN-NOVO.md` para mantenerlos sincronizados.
+
 REQUISITOS TÉCNICOS OBLIGATORIOS:
 - Usa Composer con PSR-4 autoloading (namespace RINAC\...)
+- Los stubs de WordPress y WooCommerce se instalarán como `require-dev` y quedarán en `vendor/` (no versionar en git).
 - Estructura de carpetas estándar moderna:
   rinac/
   ├── composer.json
@@ -30,6 +33,15 @@ REQUISITOS TÉCNICOS OBLIGATORIOS:
   - Los métodos pasados como callback en `add_menu_page()` / `add_submenu_page()` deben ser **public** (o usar closures).
   - Igualmente, cualquier método pasado como callback a `add_action()` / `add_filter()` / `remove_action()` / `remove_filter()` usando `array($obj, 'metodo')` debe ser **public**.
   - Evitar `private`/`protected` en callbacks invocados por WordPress (puede causar errores de accesibilidad en runtime).
+
+ - Regla específica para lint de superglobales:
+   - Si el lint se queja de `$_POST`, `$_GET` o `$_REQUEST`:
+     - No usar `$GLOBALS`.
+     - Copiar primero a variables locales con validación de tipo:
+       - `$post = isset( $_POST ) && is_array( $_POST ) ? $_POST : array();`
+       - `$get = isset( $_GET ) && is_array( $_GET ) ? $_GET : array();`
+       - `$request = isset( $_REQUEST ) && is_array( $_REQUEST ) ? $_REQUEST : array();`
+     - Opcional: añadir `/** @noinspection PhpUndefinedVariableInspection */` justo antes de las líneas donde el lint marque esos accesos.
 
 MENÚ DE ADMINISTRACIÓN DE WORDPRESS:
 - Crear un menú principal llamado "RINAC" (icon: calendar-alt)
