@@ -21,6 +21,15 @@ REQUISITOS TÉCNICOS OBLIGATORIOS:
 - Centraliza TODOS los endpoints AJAX en una sola clase RINAC\Ajax\AjaxHandler (método register() + handle() con nonce y capability check)
 - Usa SIEMPRE que sea posible las funciones nativas de WordPress y WooCommerce (wc_get_product(), wc_get_order(), wc_price(), etc.)
 - Soporta WP 6.6+ y WooCommerce 9.0+
+- i18n (requisito estricto de carga):
+  - El `text_domain` del plugin se debe cargar **exclusivamente** dentro del hook `init` (vía `load_plugin_textdomain()`).
+  - Nunca se debe cargar antes del hook `init` (ni en el bootstrap del archivo principal, ni fuera de hooks).
+- i18n (proceso):
+  - Generar el `.pot` puede hacerse **después** de tener el “básico” ya funcionando (primero se completa la funcionalidad y luego se extraen/codifican traducciones).
+- Callback visibility (requisito estricto para evitar errores):
+  - Los métodos pasados como callback en `add_menu_page()` / `add_submenu_page()` deben ser **public** (o usar closures).
+  - Igualmente, cualquier método pasado como callback a `add_action()` / `add_filter()` / `remove_action()` / `remove_filter()` usando `array($obj, 'metodo')` debe ser **public**.
+  - Evitar `private`/`protected` en callbacks invocados por WordPress (puede causar errores de accesibilidad en runtime).
 
 MENÚ DE ADMINISTRACIÓN DE WORDPRESS:
 - Crear un menú principal llamado "RINAC" (icon: calendar-alt)

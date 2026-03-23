@@ -1,4 +1,37 @@
-/.phpunit.result.cache
-.phpunit.result.cache
+## Archivos de sistema / IDE
 .DS_Store
+.idea/
+.vscode/
+
+## PHPUnit
+.phpunit.result.cache
+/.phpunit.result.cache
+
+## Composer
 vendor/
+composer.phar
+/.composer/
+
+## Node / frontend (si aplica)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+## Entornos y variables
+.env
+.env.*
+
+## Logs y cachés
+*.log
+wp-content/cache/
+/.cache/
+
+## Traducciones
+## - `.mo` se mantiene para que el plugin pueda traducirse sin compilar.
+## - `.po`/`.pot` son artefactos de trabajo (normalmente se regeneran).
+/languages/*.pot
+/languages/*.po
+
+## Symfony/PSR-6 (si se usa en el futuro)
+var/

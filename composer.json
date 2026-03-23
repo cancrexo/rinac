@@ -1,0 +1,23 @@
+{
+    "name": "rinac/rinac",
+    "description": "Rinac Is Not Another Calendar (RINAC)",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Daniel Prol",
+            "email": "cancrexo@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "RINAC\\": "src/"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
+
