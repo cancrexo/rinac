@@ -6,7 +6,15 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 
 1. **Base del plugin / bootstrap (ficheros raíz)**
    - Crear `composer.json` con autoload PSR-4 para el namespace `RINAC\...`.
+   - Ejecutar instalación inicial de Composer al empezar el proyecto:
+     - `composer install`
    - Los *stubs* de WordPress y WooCommerce se instalarán como `require-dev` en `vendor/` (y `vendor/` quedará ignorado en git).
+   - Incluir desde el principio los stubs en `require-dev`:
+     - `composer require --dev php-stubs/wordpress-stubs php-stubs/woocommerce-stubs`
+   - Verificación mínima al terminar la base:
+     - `composer.json` debe contener `require-dev` con ambos stubs.
+     - `composer.lock` debe listar ambos paquetes en `packages-dev`.
+     - `vendor/php-stubs/wordpress-stubs` y `vendor/php-stubs/woocommerce-stubs` deben existir.
    - Crear `rinac.php` como punto de entrada del plugin (define constantes, carga el autoloader de Composer y arranca la inicialización).
    - Registrar `register_activation_hook` y `register_deactivation_hook` para:
      - Crear datos mínimos de prueba SOLO si `WP_DEBUG` o `RINAC_LOAD_DEMO_ON_ACTIVATION` está activo.

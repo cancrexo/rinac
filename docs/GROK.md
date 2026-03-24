@@ -4,7 +4,15 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 
 REQUISITOS TÉCNICOS OBLIGATORIOS:
 - Usa Composer con PSR-4 autoloading (namespace RINAC\...)
+- Desde el inicio del proyecto ejecutar:
+  - `composer install`
 - Los stubs de WordPress y WooCommerce se instalarán como `require-dev` y quedarán en `vendor/` (no versionar en git).
+- Incluir desde el principio:
+  - `composer require --dev php-stubs/wordpress-stubs php-stubs/woocommerce-stubs`
+- Verificar desde el inicio:
+  - `composer.json` con `require-dev` para ambos stubs.
+  - `composer.lock` con ambos paquetes en `packages-dev`.
+  - carpetas `vendor/php-stubs/wordpress-stubs` y `vendor/php-stubs/woocommerce-stubs`.
 - Estructura de carpetas estándar moderna:
   rinac/
   ├── composer.json

@@ -41,4 +41,5 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 - Callbacks pasados a `add_menu_page`/`add_submenu_page` y a `add_action`/`add_filter` deben ser `public` si se pasan como `array($obj, 'metodo')` (evitar `private/protected`).
 - Si un lint se queja de `$_POST`/`$_GET`/`$_REQUEST`: no usar `$GLOBALS`, copiar primero a variables locales con validación de tipo (y opcionalmente `@noinspection`).
 - Stubs de WordPress y WooCommerce: instalar como `require-dev` en `vendor/` (no versionar).
+- Desde el inicio del proyecto: ejecutar `composer install` y añadir stubs con `composer require --dev php-stubs/wordpress-stubs php-stubs/woocommerce-stubs`.
 
