@@ -2,6 +2,8 @@
 
 namespace RINAC\Ajax;
 
+use RINAC\Calendar\AvailabilityManager;
+
 /**
  * @var array<mixed> $_POST
  * @var array<mixed> $_GET
@@ -180,23 +182,91 @@ class AjaxHandler {
      * @return void
      */
     private function handleGetAvailability(): void {
-        // TODO Fase 4: integrar AvailabilityManager.
+        /** @noinspection PhpUndefinedVariableInspection */
+        $post = isset( $_POST ) && is_array( $_POST ) ? $_POST : array();
+
+        /** @noinspection PhpUndefinedVariableInspection */
+        $get = isset( $_GET ) && is_array( $_GET ) ? $_GET : array();
+
+        /** @noinspection PhpUndefinedVariableInspection */
+        $request = isset( $_REQUEST ) && is_array( $_REQUEST ) ? $_REQUEST : array();
+
         $productId = 0;
-        if ( isset( $_POST['product_id'] ) ) {
-            $productId = absint( $_POST['product_id'] );
-        } elseif ( isset( $_GET['product_id'] ) ) {
-            $productId = absint( $_GET['product_id'] );
-        } elseif ( isset( $_REQUEST['product_id'] ) ) {
-            $productId = absint( $_REQUEST['product_id'] );
+        if ( isset( $post['product_id'] ) ) {
+            $productId = absint( $post['product_id'] );
+        } elseif ( isset( $get['product_id'] ) ) {
+            $productId = absint( $get['product_id'] );
+        } elseif ( isset( $request['product_id'] ) ) {
+            $productId = absint( $request['product_id'] );
         }
+
+        $startRaw = '';
+        if ( isset( $post['start'] ) ) {
+            $startRaw = sanitize_text_field( wp_unslash( $post['start'] ) );
+        } elseif ( isset( $get['start'] ) ) {
+            $startRaw = sanitize_text_field( wp_unslash( $get['start'] ) );
+        } elseif ( isset( $request['start'] ) ) {
+            $startRaw = sanitize_text_field( wp_unslash( $request['start'] ) );
+        }
+
+        $endRaw = '';
+        if ( isset( $post['end'] ) ) {
+            $endRaw = sanitize_text_field( wp_unslash( $post['end'] ) );
+        } elseif ( isset( $get['end'] ) ) {
+            $endRaw = sanitize_text_field( wp_unslash( $get['end'] ) );
+        } elseif ( isset( $request['end'] ) ) {
+            $endRaw = sanitize_text_field( wp_unslash( $request['end'] ) );
+        }
+
+        $startTs = $this->normalizeDateToTimestamp( $startRaw, strtotime( 'today' ) ?: time() );
+        $endTs = $this->normalizeDateToTimestamp( $endRaw, strtotime( '+1 day', $startTs ) ?: ( $startTs + DAY_IN_SECONDS ) );
+
+        $context = array(
+            'slot_id'            => isset( $request['slot_id'] ) ? absint( $request['slot_id'] ) : 0,
+            'turno_id'           => isset( $request['turno_id'] ) ? absint( $request['turno_id'] ) : 0,
+            'requested_capacity' => isset( $request['requested_capacity'] ) ? absint( $request['requested_capacity'] ) : 1,
+        );
+
+        $availability = ( new AvailabilityManager() )->getAvailability(
+            $productId,
+            $startTs,
+            $endTs,
+            $context
+        );
 
         wp_send_json_success(
             array(
                 'product_id'   => $productId,
-                'availability' => array(),
-                'hint'          => esc_html__( 'Availability stub (pendiente de implementar).', 'rinac' ),
+                'availability' => $availability,
             )
         );
+    }
+
+    /**
+     * Convierte fecha recibida a timestamp con fallback.
+     *
+     * @param string $raw Valor original.
+     * @param int    $fallback Fallback.
+     * @return int
+     */
+    private function normalizeDateToTimestamp( string $raw, int $fallback ): int {
+        if ( '' === $raw ) {
+            return $fallback;
+        }
+
+        if ( 1 === preg_match( '/^\d+$/', $raw ) ) {
+            $parsedInt = (int) $raw;
+            if ( $parsedInt > 0 ) {
+                return $parsedInt;
+            }
+        }
+
+        $parsed = strtotime( $raw );
+        if ( false === $parsed ) {
+            return $fallback;
+        }
+
+        return (int) $parsed;
     }
 
     /**
