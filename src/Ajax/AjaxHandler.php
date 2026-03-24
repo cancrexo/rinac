@@ -3,6 +3,7 @@
 namespace RINAC\Ajax;
 
 use RINAC\Booking\ParticipantManager;
+use RINAC\Booking\DepositManager;
 use RINAC\Booking\ResourceManager;
 use RINAC\Calendar\AvailabilityManager;
 
@@ -345,6 +346,9 @@ class AjaxHandler {
 
         $base_price = (float) get_post_meta( $productId, '_price', true );
         $estimated_total = max( 0.0, $base_price + $participants_extra + $resources_extra );
+        $depositManager = new DepositManager();
+        $deposit_percentage = $depositManager->getDepositPercentageForProduct( $productId );
+        $deposit_amount = $depositManager->calculateDepositAmount( $estimated_total, $deposit_percentage );
 
         wp_send_json_success(
             array(
@@ -357,6 +361,8 @@ class AjaxHandler {
                 'participants_extra'          => $participants_extra,
                 'resources_extra'             => $resources_extra,
                 'estimated_total'             => $estimated_total,
+                'deposit_percentage'          => $deposit_percentage,
+                'deposit_amount'              => $deposit_amount,
                 'hint'                        => esc_html__( 'Solicitud validada (persistencia en pasos posteriores).', 'rinac' ),
             )
         );
