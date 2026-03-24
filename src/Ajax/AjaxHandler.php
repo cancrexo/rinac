@@ -2,6 +2,8 @@
 
 namespace RINAC\Ajax;
 
+use RINAC\Booking\ParticipantManager;
+use RINAC\Booking\ResourceManager;
 use RINAC\Calendar\AvailabilityManager;
 
 /**
@@ -292,24 +294,99 @@ class AjaxHandler {
      * @return void
      */
     private function handleCreateBookingRequest(): void {
-        // TODO Fase 6/7: persistir booking y/o crear order meta.
+        /** @noinspection PhpUndefinedVariableInspection */
+        $post = isset( $_POST ) && is_array( $_POST ) ? $_POST : array();
+
+        /** @noinspection PhpUndefinedVariableInspection */
+        $get = isset( $_GET ) && is_array( $_GET ) ? $_GET : array();
+
+        /** @noinspection PhpUndefinedVariableInspection */
+        $request = isset( $_REQUEST ) && is_array( $_REQUEST ) ? $_REQUEST : array();
+
         $productId = 0;
-        if ( isset( $_POST['product_id'] ) ) {
-            $productId = absint( $_POST['product_id'] );
-        } elseif ( isset( $_GET['product_id'] ) ) {
-            $productId = absint( $_GET['product_id'] );
-        } elseif ( isset( $_REQUEST['product_id'] ) ) {
-            $productId = absint( $_REQUEST['product_id'] );
+        if ( isset( $post['product_id'] ) ) {
+            $productId = absint( $post['product_id'] );
+        } elseif ( isset( $get['product_id'] ) ) {
+            $productId = absint( $get['product_id'] );
+        } elseif ( isset( $request['product_id'] ) ) {
+            $productId = absint( $request['product_id'] );
         }
+
+        if ( $productId <= 0 ) {
+            wp_send_json_error(
+                array(
+                    'message' => esc_html__( 'Producto inválido.', 'rinac' ),
+                ),
+                400
+            );
+        }
+
+        $participantManager = new ParticipantManager();
+        $resourceManager = new ResourceManager();
+
+        $participantsRaw = $this->extractStructuredArray( $request, 'participants' );
+        $resourcesRaw = $this->extractStructuredArray( $request, 'resources' );
+
+        $participants = $participantManager->normalizeParticipants( $participantsRaw );
+        $resources = $resourceManager->normalizeResources( $resourcesRaw );
+
+        if ( ! $resourceManager->validateResourcesForProduct( $productId, $resources ) ) {
+            wp_send_json_error(
+                array(
+                    'message' => esc_html__( 'Uno o más recursos no están permitidos para este producto.', 'rinac' ),
+                ),
+                400
+            );
+        }
+
+        $participants_capacity_units = $participantManager->calculateCapacityUnits( $participants );
+        $participants_extra = $participantManager->calculateParticipantsExtra( $participants );
+        $resources_extra = $resourceManager->calculateResourcesExtra( $resources );
+
+        $base_price = (float) get_post_meta( $productId, '_price', true );
+        $estimated_total = max( 0.0, $base_price + $participants_extra + $resources_extra );
 
         wp_send_json_success(
             array(
-                'product_id' => $productId,
-                'status'     => 'ok',
-                'request_id' => wp_generate_uuid4(),
-                'hint'       => esc_html__( 'Create booking request stub (pendiente).', 'rinac' ),
+                'product_id'                  => $productId,
+                'status'                      => 'ok',
+                'request_id'                  => wp_generate_uuid4(),
+                'participants'                => $participants,
+                'resources'                   => $resources,
+                'participants_capacity_units' => $participants_capacity_units,
+                'participants_extra'          => $participants_extra,
+                'resources_extra'             => $resources_extra,
+                'estimated_total'             => $estimated_total,
+                'hint'                        => esc_html__( 'Solicitud validada (persistencia en pasos posteriores).', 'rinac' ),
             )
         );
+    }
+
+    /**
+     * Extrae un array estructurado desde request (array o JSON).
+     *
+     * @param array  $request Datos request.
+     * @param string $key Clave.
+     * @return array
+     */
+    private function extractStructuredArray( array $request, string $key ): array {
+        if ( ! isset( $request[ $key ] ) ) {
+            return array();
+        }
+
+        $value = $request[ $key ];
+        if ( is_array( $value ) ) {
+            return $value;
+        }
+
+        if ( is_string( $value ) ) {
+            $decoded = json_decode( wp_unslash( $value ), true );
+            if ( is_array( $decoded ) ) {
+                return $decoded;
+            }
+        }
+
+        return array();
     }
 
 }

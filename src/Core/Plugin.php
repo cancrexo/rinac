@@ -3,6 +3,8 @@
 namespace RINAC\Core;
 
 use RINAC\Admin\BookingMetaBoxes;
+use RINAC\Booking\ParticipantManager;
+use RINAC\Booking\ResourceManager;
 use RINAC\Admin\DemoDataImporter;
 use RINAC\Core\I18n;
 use RINAC\Ajax\AjaxHandler;
@@ -26,6 +28,8 @@ class Plugin {
         ( new ProductTypeRegistrar() )->register();
         ( new MenuRegistrar() )->register();
         ( new BookingMetaBoxes() )->register();
+        ( new ParticipantManager() )->register();
+        ( new ResourceManager() )->register();
         ( new AjaxHandler() )->register();
     }
 
