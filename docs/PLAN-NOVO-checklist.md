@@ -6,7 +6,7 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 
 1. [x] Configuración inicial: `composer.json`, `rinac.php`, PSR-4, activación/desactivación, registro `rinac_reserva`, registro CPTs + menú “RINAC” + datos mínimos demo en activación
 2. [x] Clase `AjaxHandler` centralizada + ejemplo de 3 endpoints (`rinac_get_availability`, `rinac_get_calendar_events`, `rinac_create_booking_request`)
-3. [ ] Meta boxes y settings para productos `rinac_reserva`
+3. [x] Meta boxes y settings para productos `rinac_reserva`
 4. [ ] Lógica de disponibilidad y cálculo de capacidad (clase `AvailabilityManager`)
 5. [ ] Frontend booking form + FullCalendar integración
 6. [ ] Gestión de recursos y participantes
