@@ -126,7 +126,7 @@ class BookingMetaBoxes {
         $this->renderMultiSelectField(
             'rinac_allowed_participant_types',
             __( 'Tipos de participante permitidos', 'rinac' ),
-            'rinac_participant_type',
+            'rinac_participant',
             $selected_participants
         );
         $this->renderMultiSelectField(

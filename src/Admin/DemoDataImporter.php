@@ -18,7 +18,7 @@ class DemoDataImporter {
      */
     public static function import_minimal_demo(): void {
         self::maybeInsertCpt(
-            'rinac_participant_type',
+            'rinac_participant',
             __( 'Participante demo', 'rinac' ),
             'rinac-demo-participant'
         );

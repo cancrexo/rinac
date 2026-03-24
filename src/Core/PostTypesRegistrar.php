@@ -65,7 +65,7 @@ class PostTypesRegistrar {
         );
 
         register_post_type(
-            'rinac_participant_type',
+            'rinac_participant',
             array_merge(
                 $common,
                 array(

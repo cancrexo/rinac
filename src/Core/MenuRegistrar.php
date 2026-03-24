@@ -56,7 +56,7 @@ class MenuRegistrar {
         $this->addProductReservablesSubmenu( $capability );
         $this->addRedirectSubmenu( $capability, 'Slots', __( 'Slots', 'rinac' ), 'rinac_slots', 'rinac_slot' );
         $this->addRedirectSubmenu( $capability, 'Turnos', __( 'Turnos', 'rinac' ), 'rinac_turnos', 'rinac_turno' );
-        $this->addRedirectSubmenu( $capability, 'Tipos de Participantes', __( 'Tipos de Participantes', 'rinac' ), 'rinac_participant_types', 'rinac_participant_type' );
+        $this->addRedirectSubmenu( $capability, 'Tipos de Participantes', __( 'Tipos de Participantes', 'rinac' ), 'rinac_participant_types', 'rinac_participant' );
         $this->addRedirectSubmenu( $capability, 'Recursos', __( 'Recursos', 'rinac' ), 'rinac_resources', 'rinac_resource' );
         $this->addGlobalCalendarSubmenu( $capability );
         $this->addBookingsSubmenu( $capability );
