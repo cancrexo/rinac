@@ -5,6 +5,7 @@ namespace RINAC\Ajax;
 use RINAC\Booking\ParticipantManager;
 use RINAC\Booking\DepositManager;
 use RINAC\Booking\ResourceManager;
+use RINAC\Booking\HoldManager;
 use RINAC\Calendar\AvailabilityManager;
 
 /**
@@ -42,6 +43,7 @@ class AjaxHandler {
     public function register(): void {
         $endpoints = array(
             'rinac_get_availability',
+            'rinac_quote_booking',
             'rinac_get_calendar_events',
             'rinac_create_booking_request',
         );
@@ -89,6 +91,10 @@ class AjaxHandler {
         switch ( $endpoint ) {
             case 'rinac_get_availability':
                 $this->handleGetAvailability();
+                break;
+
+            case 'rinac_quote_booking':
+                $this->handleQuoteBooking();
                 break;
 
             case 'rinac_get_calendar_events':
@@ -156,7 +162,7 @@ class AjaxHandler {
     private function userAllowedToCallEndpoint( string $endpoint ): bool {
         $readOnly = in_array(
             $endpoint,
-            array( 'rinac_get_availability', 'rinac_get_calendar_events' ),
+            array( 'rinac_get_availability', 'rinac_get_calendar_events', 'rinac_quote_booking' ),
             true
         );
 
@@ -322,6 +328,29 @@ class AjaxHandler {
             );
         }
 
+        $startTs = $this->extractStartTimestamp( $request );
+        $endTs = $this->extractEndTimestamp( $request, $startTs );
+        $holdToken = isset( $request['hold_token'] ) ? sanitize_text_field( wp_unslash( (string) $request['hold_token'] ) ) : '';
+
+        $holdManager = new HoldManager();
+        $holdValidation = $holdManager->validateHoldToken(
+            $holdToken,
+            array(
+                'product_id' => $productId,
+                'start_ts'   => $startTs,
+                'end_ts'     => $endTs,
+            )
+        );
+
+        if ( empty( $holdValidation['ok'] ) ) {
+            wp_send_json_error(
+                array(
+                    'message' => isset( $holdValidation['message'] ) ? (string) $holdValidation['message'] : esc_html__( 'Hold inválido.', 'rinac' ),
+                ),
+                409
+            );
+        }
+
         $participantManager = new ParticipantManager();
         $resourceManager = new ResourceManager();
 
@@ -349,6 +378,7 @@ class AjaxHandler {
         $depositManager = new DepositManager();
         $deposit_percentage = $depositManager->getDepositPercentageForProduct( $productId );
         $deposit_amount = $depositManager->calculateDepositAmount( $estimated_total, $deposit_percentage );
+        $holdManager->consumeHold( $holdToken );
 
         wp_send_json_success(
             array(
@@ -363,7 +393,115 @@ class AjaxHandler {
                 'estimated_total'             => $estimated_total,
                 'deposit_percentage'          => $deposit_percentage,
                 'deposit_amount'              => $deposit_amount,
+                'hold_token'                  => $holdToken,
                 'hint'                        => esc_html__( 'Solicitud validada (persistencia en pasos posteriores).', 'rinac' ),
+            )
+        );
+    }
+
+    /**
+     * Crea un quote con bloqueo temporal (hold).
+     *
+     * @return void
+     */
+    private function handleQuoteBooking(): void {
+        /** @noinspection PhpUndefinedVariableInspection */
+        $post = isset( $_POST ) && is_array( $_POST ) ? $_POST : array();
+
+        /** @noinspection PhpUndefinedVariableInspection */
+        $get = isset( $_GET ) && is_array( $_GET ) ? $_GET : array();
+
+        /** @noinspection PhpUndefinedVariableInspection */
+        $request = isset( $_REQUEST ) && is_array( $_REQUEST ) ? $_REQUEST : array();
+
+        $productId = 0;
+        if ( isset( $post['product_id'] ) ) {
+            $productId = absint( $post['product_id'] );
+        } elseif ( isset( $get['product_id'] ) ) {
+            $productId = absint( $get['product_id'] );
+        } elseif ( isset( $request['product_id'] ) ) {
+            $productId = absint( $request['product_id'] );
+        }
+
+        if ( $productId <= 0 ) {
+            wp_send_json_error(
+                array(
+                    'message' => esc_html__( 'Producto inválido para generar quote.', 'rinac' ),
+                ),
+                400
+            );
+        }
+
+        $startTs = $this->extractStartTimestamp( $request );
+        $endTs = $this->extractEndTimestamp( $request, $startTs );
+        $context = array(
+            'slot_id'            => isset( $request['slot_id'] ) ? absint( $request['slot_id'] ) : 0,
+            'turno_id'           => isset( $request['turno_id'] ) ? absint( $request['turno_id'] ) : 0,
+            'requested_capacity' => isset( $request['requested_capacity'] ) ? max( 1, absint( $request['requested_capacity'] ) ) : 1,
+        );
+
+        $availability = ( new AvailabilityManager() )->getAvailability( $productId, $startTs, $endTs, $context );
+        if ( empty( $availability['available'] ) ) {
+            wp_send_json_error(
+                array(
+                    'message'      => esc_html__( 'No hay disponibilidad para generar hold.', 'rinac' ),
+                    'availability' => $availability,
+                ),
+                409
+            );
+        }
+
+        $holdManager = new HoldManager();
+        $heldUnits = $holdManager->getActiveHeldUnits(
+            $productId,
+            $startTs,
+            $endTs,
+            (int) $context['slot_id'],
+            (int) $context['turno_id']
+        );
+
+        $remainingAfterHolds = max( 0, (int) $availability['remaining_capacity'] - $heldUnits );
+        if ( $remainingAfterHolds < (int) $context['requested_capacity'] ) {
+            wp_send_json_error(
+                array(
+                    'message'               => esc_html__( 'No hay capacidad disponible tras bloqueos activos.', 'rinac' ),
+                    'availability'          => $availability,
+                    'held_units'            => $heldUnits,
+                    'remaining_after_holds' => $remainingAfterHolds,
+                ),
+                409
+            );
+        }
+
+        $hold = $holdManager->createHold(
+            array(
+                'product_id'         => $productId,
+                'start_ts'           => $startTs,
+                'end_ts'             => $endTs,
+                'slot_id'            => (int) $context['slot_id'],
+                'turno_id'           => (int) $context['turno_id'],
+                'requested_capacity' => (int) $context['requested_capacity'],
+            )
+        );
+
+        if ( empty( $hold['ok'] ) ) {
+            wp_send_json_error(
+                array(
+                    'message' => isset( $hold['message'] ) ? (string) $hold['message'] : esc_html__( 'No se pudo crear el hold.', 'rinac' ),
+                ),
+                500
+            );
+        }
+
+        wp_send_json_success(
+            array(
+                'product_id'            => $productId,
+                'availability'          => $availability,
+                'held_units'            => $heldUnits,
+                'remaining_after_holds' => $remainingAfterHolds,
+                'hold_token'            => (string) $hold['token'],
+                'hold_expires_at'       => (int) $hold['expires_at'],
+                'hold_ttl'              => (int) $hold['ttl'],
             )
         );
     }
@@ -393,6 +531,37 @@ class AjaxHandler {
         }
 
         return array();
+    }
+
+    /**
+     * Extrae timestamp de inicio desde request.
+     *
+     * @param array $request Request.
+     * @return int
+     */
+    private function extractStartTimestamp( array $request ): int {
+        $raw = '';
+        if ( isset( $request['start'] ) ) {
+            $raw = sanitize_text_field( wp_unslash( (string) $request['start'] ) );
+        }
+
+        return $this->normalizeDateToTimestamp( $raw, strtotime( 'today' ) ?: time() );
+    }
+
+    /**
+     * Extrae timestamp de fin desde request.
+     *
+     * @param array $request Request.
+     * @param int   $start_ts Inicio.
+     * @return int
+     */
+    private function extractEndTimestamp( array $request, int $start_ts ): int {
+        $raw = '';
+        if ( isset( $request['end'] ) ) {
+            $raw = sanitize_text_field( wp_unslash( (string) $request['end'] ) );
+        }
+
+        return $this->normalizeDateToTimestamp( $raw, strtotime( '+1 day', $start_ts ) ?: ( $start_ts + DAY_IN_SECONDS ) );
     }
 
 }

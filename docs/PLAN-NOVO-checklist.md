@@ -11,7 +11,7 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 5. [x] Gestión de recursos y participantes
 6. [x] Sistema de pago depósito + hooks de WooCommerce
 7. [x] Calendario global admin + listado de reservas + botón “Importar datos de prueba”
-8. [ ] Control de concurrencia y bloqueos temporales (quote/hold antes de confirmar reserva)
+8. [x] Control de concurrencia y bloqueos temporales (quote/hold antes de confirmar reserva)
 9. [ ] Frontend booking form + FullCalendar integración
 10. [ ] Templates y overrides
 11. [ ] Documentación completa (`README.md` + inline docs)
