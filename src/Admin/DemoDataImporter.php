@@ -85,7 +85,12 @@ class DemoDataImporter {
 
         self::import_minimal_demo();
 
-        $redirect_url = admin_url( 'admin.php?page=rinac_settings&rinac_demo_imported=1' );
+        $referer = wp_get_referer();
+        if ( is_string( $referer ) && '' !== $referer ) {
+            $redirect_url = add_query_arg( 'rinac_demo_imported', '1', $referer );
+        } else {
+            $redirect_url = admin_url( 'admin.php?page=rinac_settings&rinac_demo_imported=1' );
+        }
         wp_safe_redirect( $redirect_url );
         exit;
     }

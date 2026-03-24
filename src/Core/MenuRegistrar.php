@@ -3,6 +3,7 @@
 namespace RINAC\Core;
 
 use RINAC\Admin\CalendarioGlobalPage;
+use RINAC\Admin\BookingListTable;
 use RINAC\Admin\DashboardPage;
 use RINAC\Admin\DemoDataImporter;
 use RINAC\Admin\SettingsPage;
@@ -58,7 +59,7 @@ class MenuRegistrar {
         $this->addRedirectSubmenu( $capability, 'Tipos de Participantes', __( 'Tipos de Participantes', 'rinac' ), 'rinac_participant_types', 'rinac_participant_type' );
         $this->addRedirectSubmenu( $capability, 'Recursos', __( 'Recursos', 'rinac' ), 'rinac_resources', 'rinac_resource' );
         $this->addGlobalCalendarSubmenu( $capability );
-        $this->addRedirectBookingsSubmenu( $capability );
+        $this->addBookingsSubmenu( $capability );
         $this->addSettingsSubmenu( $capability );
     }
 
@@ -142,22 +143,14 @@ class MenuRegistrar {
         );
     }
 
-    private function addRedirectBookingsSubmenu( string $capability ): void {
+    private function addBookingsSubmenu( string $capability ): void {
         add_submenu_page(
             'rinac',
             __( 'Reservas', 'rinac' ),
             __( 'Reservas', 'rinac' ),
             $capability,
             'rinac_bookings',
-            function () use ( $capability ) {
-                if ( ! current_user_can( $capability ) ) {
-                    wp_die( esc_html__( 'No tienes permisos para acceder a esta sección.', 'rinac' ) );
-                }
-
-                $url = admin_url( 'edit.php?post_type=rinac_booking' );
-                wp_safe_redirect( $url );
-                exit;
-            }
+            array( BookingListTable::class, 'renderPage' )
         );
     }
 
