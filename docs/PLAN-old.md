@@ -20,7 +20,7 @@ Objetivo: dejar el plugin “arrancando” con estructura PSR-4 (Composer), name
 - [x] Registrar CPTs:
   - [x] `rinac_slot`
   - [x] `rinac_turno`
-  - [x] `rinac_participant_type`
+  - [x] `rinac_participant`
   - [x] `rinac_resource`
   - [x] `rinac_booking`
 - [x] Registrar tipo de producto WooCommerce custom `rinac_reserva` y clase `rinac\Booking\RinacReservationProduct`.

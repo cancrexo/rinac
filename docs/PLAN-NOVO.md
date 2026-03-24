@@ -51,7 +51,7 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
    - `RINAC\Core\Plugin` (orquesta el arranque del plugin y registra hooks principales).
    - `RINAC\Core\Loader` (helper para centralizar `add_action`/`add_filter` si conviene mantener el bootstrap limpio).
    - `RINAC\Core\I18n` (carga `textdomain` y assets traducibles).
-  - `RINAC\Core\PostTypesRegistrar` (registra CPTs: `rinac_slot`, `rinac_participant_type`, `rinac_resource`, `rinac_booking`).
+  - `RINAC\Core\PostTypesRegistrar` (registra CPTs: `rinac_slot`, `rinac_participant`, `rinac_resource`, `rinac_booking`).
    - `RINAC\Core\MenuRegistrar` (crea menú “RINAC” y submenús en el orden exacto).
    - `RINAC\Core\ProductTypeRegistrar` (registra el tipo de producto WooCommerce `rinac_reserva` y el mapeo a la clase).
    - `RINAC\Models\ReservaProduct` (clase del tipo producto; expone getters usados por disponibilidad/formularios).
@@ -270,7 +270,7 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
    - Capacidad efectiva por validación: mínimo entre límites aplicables.
 
 3. **Participantes como entidad de negocio**
-   - Metadatos por `rinac_participant_type` para precio y fracción de capacidad.
+   - Metadatos por `rinac_participant` para precio y fracción de capacidad.
    - Reglas de mínimos/máximos por tipo cuando aplique.
 
 4. **Recursos tipados**

@@ -26,7 +26,7 @@ TIPOS DE POST PERSONALIZADOS (Custom Post Types):
 1. rinac_reserva → nuevo tipo de producto WooCommerce ("Reserva")
 2. rinac_slot → slots/horarios (mañana, 11:00-12:00, etc.). Admin page independiente con listado + formulario
 3. rinac_turno → turnos (comida, cena, etc.). Admin page independiente
-4. rinac_participant_type → tipos de participantes (adulto, niño, bebé, senior…). Permite precio, fracción (0.5), etc.
+4. rinac_participant → tipos de participantes (adulto, niño, bebé, senior…). Permite precio, fracción (0.5), etc.
 5. rinac_resource → recursos extras (visita guiada, limpieza, parking, chofer…). Precio opcional
 6. rinac_booking → reservas confirmadas (relacionadas con order WooCommerce)
 

@@ -66,7 +66,7 @@ TIPOS DE PRODUCTO Y POST PERSONALIZADOS:
 - rinac_reserva: tipo de producto WooCommerce personalizado (NO CPT separado). Registrado con woocommerce_register_product_type y filtro woocommerce_product_class → clase RINAC\Models\ReservaProduct
 - rinac_slot → CPT con admin page independiente
 - rinac_turno → CPT con admin page independiente
-- rinac_participant_type → CPT (precio, fracción, etc.)
+- rinac_participant → CPT (precio, fracción, etc.)
 - rinac_resource → CPT (precio opcional)
 - rinac_booking → CPT (relacionado con WC orders)
 
@@ -77,7 +77,7 @@ Adicionalmente, implementa manejo de datos de prueba de la siguiente forma:
   - Datos mínimos: 3 tipos de participantes, 4 slots, 2 turnos, 3 recursos y 1-2 productos rinac_reserva de ejemplo.
 
 - En un paso posterior (paso 8 o 10): botón "Importar datos de prueba" en RINAC → Ajustes con advertencia roja fuerte:
-  "¡ATENCIÓN! Esta acción ELIMINARÁ TODOS los registros existentes... (rinac_slot, rinac_turno, rinac_participant_type, rinac_resource, rinac_booking y TODOS los productos de tipo rinac_reserva)"
+  "¡ATENCIÓN! Esta acción ELIMINARÁ TODOS los registros existentes... (rinac_slot, rinac_turno, rinac_participant, rinac_resource, rinac_booking y TODOS los productos de tipo rinac_reserva)"
 
 TAREAS QUE TE PIDO (modo Composer paso a paso):
 Desarrolla el plugin paso a paso en este orden (responde con cada paso completo y luego espera mi "siguiente"):

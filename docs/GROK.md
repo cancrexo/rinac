@@ -79,7 +79,7 @@ La idea es que el plugin sirva para crear reservas hoteleras, reservas de activi
 TIPOS DE PRODUCTO Y POST PERSONALIZADOS:
 - rinac_reserva: tipo de producto WooCommerce personalizado (NO CPT separado). Registrado correctamente con woocommerce_register_product_type y filtro woocommerce_product_class → clase RINAC\Models\ReservaProduct
 - rinac_slot → CPT con admin page independiente
-- rinac_participant_type → CPT (precio, fracción, etc.)
+- rinac_participant → CPT (precio, fracción, etc.)
 - rinac_resource → CPT (precio opcional)
 - rinac_booking → CPT (relacionado con WC orders)
 
@@ -169,7 +169,7 @@ ANEXO: CAMBIOS DE ARQUITECTURA ACORDADOS
 - La capacidad efectiva será el mínimo entre límites aplicables.
 
 3) Participantes formalizados
-- `rinac_participant_type` debe soportar:
+- `rinac_participant` debe soportar:
   - tipo de precio,
   - valor de precio,
   - fracción de capacidad,
