@@ -91,12 +91,13 @@ Después de mostrarme ese plan detallado, desarrolla el plugin paso a paso en es
 2. Clase AjaxHandler centralizada + ejemplo de 3 endpoints
 3. Meta boxes y settings para productos de tipo rinac_reserva
 4. Lógica de disponibilidad y cálculo de capacidad (clase AvailabilityManager)
-5. Frontend booking form + FullCalendar integración
-6. Gestión de recursos y participantes
-7. Sistema de pago depósito + hooks de WooCommerce
-8. Calendario global admin + listado de reservas + botón "Importar datos de prueba"
-9. Templates y overrides
-10. Documentación completa (README.md + inline docs)
+5. Gestión de recursos y participantes
+6. Sistema de pago depósito + hooks de WooCommerce
+7. Calendario global admin + listado de reservas + botón "Importar datos de prueba"
+8. Concurrencia (quote/hold) para bloqueo temporal antes de confirmar reserva
+9. Frontend booking form + FullCalendar integración
+10. Templates y overrides
+11. Documentación completa (README.md + inline docs)
 
 Reglas estrictas:
 - Todo código limpio, comentado, con namespaces
@@ -187,3 +188,11 @@ ANEXO: CAMBIOS DE ARQUITECTURA ACORDADOS
 7) Escalabilidad de datos
 - Mantener CPTs para administración y edición.
 - Prever tabla técnica para consultas intensivas de disponibilidad y solapes.
+
+ANEXO: ORDEN DE EJECUCIÓN (BACKEND-FIRST)
+
+- Priorizar backend completo antes del frontend:
+  1) Base técnica y disponibilidad (pasos 1-4).
+  2) Backend de negocio (recursos/participantes, depósito, admin de reservas y concurrencia).
+  3) Frontend (formulario + FullCalendar).
+  4) Cierre (templates y documentación).

@@ -8,13 +8,13 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 2. [x] Clase `AjaxHandler` centralizada + ejemplo de 3 endpoints (`rinac_get_availability`, `rinac_get_calendar_events`, `rinac_create_booking_request`)
 3. [x] Meta boxes y settings para productos `rinac_reserva`
 4. [x] Lógica de disponibilidad y cálculo de capacidad (clase `AvailabilityManager`)
-5. [ ] Frontend booking form + FullCalendar integración
-6. [ ] Gestión de recursos y participantes
-7. [ ] Sistema de pago depósito + hooks de WooCommerce
-8. [ ] Calendario global admin + listado de reservas + botón “Importar datos de prueba”
-9. [ ] Templates y overrides
-10. [ ] Documentación completa (`README.md` + inline docs)
-11. [ ] Control de concurrencia y bloqueos temporales (quote/hold antes de confirmar reserva)
+5. [ ] Gestión de recursos y participantes
+6. [ ] Sistema de pago depósito + hooks de WooCommerce
+7. [ ] Calendario global admin + listado de reservas + botón “Importar datos de prueba”
+8. [ ] Control de concurrencia y bloqueos temporales (quote/hold antes de confirmar reserva)
+9. [ ] Frontend booking form + FullCalendar integración
+10. [ ] Templates y overrides
+11. [ ] Documentación completa (`README.md` + inline docs)
 
 ### Casos de uso incluidos (alcance funcional)
 

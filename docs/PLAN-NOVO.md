@@ -150,39 +150,39 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
    - Resolver por estrategia según `rinac_booking_mode`.
    - Cache con transients (clave determinística por producto + rango + parámetros relevantes).
 
-10. **Frontend: booking form + FullCalendar**
-   - `Frontend\BookingForm` render del formulario.
-   - `FullCalendar` consulta disponibilidad/eventos vía endpoints AJAX.
-
-11. **Gestión de recursos y participantes**
+10. **Gestión de recursos y participantes**
    - `ResourceManager` relaciona recursos seleccionados.
    - `ParticipantManager` gestiona tipos, precio/fracción, totalizadores.
    - `BookingManager` valida todo junto.
 
-12. **Sistema de pago con depósito + hooks WooCommerce**
+11. **Sistema de pago con depósito + hooks WooCommerce**
    - `DepositManager` define depósito y transiciones de estado.
    - Integración con hooks WooCommerce para aplicar lógica sin plugins externos.
 
-13. **Calendario global admin + listado de reservas + Importación demo**
+12. **Calendario global admin + listado de reservas + Importación demo**
    - Página admin `GlobalCalendarPage`.
    - Listado `BookingListTable`.
    - Botón “Importar datos de prueba” dentro de `Ajustes`.
 
-14. **Templates y overrides**
-   - `templates/` contendrá vistas del plugin.
-   - `TemplateLoader` carga templates de forma segura (y se define estrategia de override si aplica).
-
-15. **Documentación completa**
-   - `README.md` con instalación, flujo de reservas, endpoints (conceptual), seguridad y i18n.
-   - Inline docs en clases críticas (`AjaxHandler`, `AvailabilityManager`, etc.).
-
-16. **Concurrencia y bloqueos temporales (quote/hold)**
+13. **Concurrencia y bloqueos temporales (quote/hold)**
    - Añadir endpoint de prevalidación (`rinac_quote_booking`) para:
      - validar disponibilidad y reglas,
      - calcular precio preliminar,
      - crear bloqueo temporal de capacidad.
    - Confirmación posterior por `rinac_create_booking_request` reutilizando el bloqueo activo.
    - TTL recomendado de bloqueo: 10-15 minutos.
+
+14. **Frontend: booking form + FullCalendar**
+   - `Frontend\BookingForm` render del formulario.
+   - `FullCalendar` consulta disponibilidad/eventos vía endpoints AJAX.
+
+15. **Templates y overrides**
+   - `templates/` contendrá vistas del plugin.
+   - `TemplateLoader` carga templates de forma segura (y se define estrategia de override si aplica).
+
+16. **Documentación completa**
+   - `README.md` con instalación, flujo de reservas, endpoints (conceptual), seguridad y i18n.
+   - Inline docs en clases críticas (`AjaxHandler`, `AvailabilityManager`, etc.).
 
 17. **Nota importante sobre “versión anterior”**
    - El documento base menciona casos de uso (bodega, restaurante opción1/2, alquiler coches/habitaciones) “exactamente igual que en la versión anterior”.
@@ -268,6 +268,13 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 6. **Escalabilidad de datos**
    - Mantener CPTs para gestión editorial y administración.
    - Prever tabla técnica para lecturas intensivas de disponibilidad/ocupación.
+
+### Orden de ejecución acordado (backend-first)
+
+1. Pasos 1 a 4 (base + AJAX + meta boxes + disponibilidad).
+2. Backend de negocio: recursos/participantes, depósito, calendario/listado admin y concurrencia.
+3. Frontend: booking form + integración FullCalendar.
+4. Cierre: templates/overrides y documentación.
 
 ### Siguiente paso
 
