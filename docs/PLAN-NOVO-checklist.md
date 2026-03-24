@@ -34,6 +34,7 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 - [x] Añadir “perfil de negocio” para simplificar configuración del admin.
 - [x] Introducir flujo quote/hold para reducir sobreserva en concurrencia.
 - [x] Mantener CPT para gestión y prever tabla técnica para consultas intensivas de disponibilidad.
+- [x] Aclaración de calendario: cada producto tiene calendario/configuración propios y el calendario global es una vista agregada.
 
 ### Reglas clave (recordatorio)
 - `text_domain` cargado **exclusivamente** dentro de `init` (nunca antes).

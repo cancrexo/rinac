@@ -233,7 +233,8 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 
 6. **Objetivo común**
    - Usar el mismo panel de administración para todos los escenarios.
-   - Disponer de calendario global e individual por producto.
+   - Calendario individual por producto (cada producto con configuración y disponibilidad independientes).
+   - Calendario global como vista agregada/filtrable de múltiples productos, sin forzar una configuración única compartida.
 
 ### Cambios de arquitectura acordados
 

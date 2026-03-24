@@ -133,7 +133,8 @@ ANEXO: CASOS DE USO FUNCIONALES (OBLIGATORIOS)
   - Recursos opcionales (parking, lavandería, etc.).
 - Objetivo común:
   - Mismo panel admin para todos los escenarios.
-  - Calendario global e individual por producto.
+  - Calendario individual por producto (cada producto con configuración y disponibilidad independientes).
+  - Calendario global como vista agregada/filtrable de múltiples productos, sin forzar una configuración única compartida.
 
 ANEXO: CAMBIOS DE ARQUITECTURA ACORDADOS
 
