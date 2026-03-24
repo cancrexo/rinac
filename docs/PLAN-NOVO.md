@@ -2,6 +2,15 @@
 
 IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar también `GROK.md` y `PLAN-NOVO-checklist.md` para mantenerlos sincronizados.
 
+### Definición oficial de Slot (referencia única)
+
+- En RINAC, `slot` es la única entidad temporal/operativa para reservar.
+- Un `slot` puede representar:
+  - una etiqueta de servicio (p. ej. `comida`, `cena`), o
+  - una franja horaria concreta (p. ej. `12:00-12:30`, `12:30-13:00`).
+- `turno` se entiende como alias/sinónimo de `slot`.
+- La disponibilidad y la capacidad se calculan sobre `slot`.
+
 ### Paso 1 del desarrollo
 
 1. **Base del plugin / bootstrap (ficheros raíz)**
@@ -42,7 +51,7 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
    - `RINAC\Core\Plugin` (orquesta el arranque del plugin y registra hooks principales).
    - `RINAC\Core\Loader` (helper para centralizar `add_action`/`add_filter` si conviene mantener el bootstrap limpio).
    - `RINAC\Core\I18n` (carga `textdomain` y assets traducibles).
-   - `RINAC\Core\PostTypesRegistrar` (registra CPTs: `rinac_slot`, `rinac_turno`, `rinac_participant_type`, `rinac_resource`, `rinac_booking`).
+  - `RINAC\Core\PostTypesRegistrar` (registra CPTs: `rinac_slot`, `rinac_participant_type`, `rinac_resource`, `rinac_booking`).
    - `RINAC\Core\MenuRegistrar` (crea menú “RINAC” y submenús en el orden exacto).
    - `RINAC\Core\ProductTypeRegistrar` (registra el tipo de producto WooCommerce `rinac_reserva` y el mapeo a la clase).
    - `RINAC\Models\ReservaProduct` (clase del tipo producto; expone getters usados por disponibilidad/formularios).
@@ -87,12 +96,11 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
      1. `Dashboard`
      2. `Productos Reservables`
      3. `Slots`
-     4. `Turnos`
-     5. `Tipos de Participantes`
-     6. `Recursos`
-     7. `Calendario Global`
-     8. `Reservas`
-     9. `Ajustes` (incluye botón “Importar datos de prueba” con advertencia roja fuerte).
+    4. `Tipos de Participantes`
+    5. `Recursos`
+    6. `Calendario Global`
+    7. `Reservas`
+    8. `Ajustes` (incluye botón “Importar datos de prueba” con advertencia roja fuerte).
    - Cada página del menú se implementa con su clase correspondiente en `RINAC\Admin\...`.
 
    - **Requisito estricto de callbacks (importante con `private`)**
@@ -147,14 +155,14 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 8. **Meta boxes y settings para `rinac_reserva`**
    - Añadir meta boxes en edición del producto `rinac_reserva`:
      - Capacidad base / reglas.
-     - Qué CPTs aplica (slots/turnos/resources/participant types permitidos).
+    - Qué CPTs aplica (slots/resources/participant types permitidos).
      - Reglas de disponibilidad.
      - Ajustes para depósito (si aplica).
    - Guardado con `nonce` + capability check + sanitización.
 
 9. **Disponibilidad y capacidad (AvailabilityManager)**
    - Calcula capacidad restante: total - ocupación.
-   - Maneja solapamientos según el modelo (slots/turnos/unidades/rangos).
+  - Maneja solapamientos según el modelo (slots/unidades/rangos).
    - Resolver por estrategia según `rinac_booking_mode`.
    - Cache con transients (clave determinística por producto + rango + parámetros relevantes).
 
@@ -213,15 +221,15 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 ### Casos de uso funcionales incluidos (alcance)
 
 1. **Bodega**
-   - Reserva por fecha y slot/turno.
+  - Reserva por fecha y slot.
    - Capacidad por franja.
    - Participantes por tipo (adulto/niño/bebé...) con fracción configurable.
    - Recursos opcionales (por ejemplo visita guiada, degustación).
 
 2. **Restaurante (opción 1)**
-   - Reserva por día y turno.
-   - Límite global de comensales por turno.
-   - Límite opcional por slot dentro del turno.
+  - Reserva por día y slot (p. ej. comida/cena o franjas `12:00-12:30`, `12:30-13:00`).
+  - Límite global de comensales por franja.
+  - Límite opcional por slot.
    - Precio por comensal como ajuste sobre precio base.
 
 3. **Restaurante (opción 2)**
@@ -252,13 +260,13 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
      - `date_range`
      - `datetime`
      - `date_range_same_time`
-     - `turno_dia`
+    - `slot_dia`
      - `unidad_rango`
    - `AvailabilityManager` debe resolver reglas por estrategia según modo.
 
 2. **Capacidad en dos niveles**
    - Capacidad global del producto.
-   - Capacidad por slot/turno/unidad.
+  - Capacidad por slot/unidad.
    - Capacidad efectiva por validación: mínimo entre límites aplicables.
 
 3. **Participantes como entidad de negocio**
@@ -269,9 +277,9 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
    - `addon` (extra opcional) y `unit` (unidad reservable).
    - Política de precio por recurso (`fixed`, `per_person`, `per_day`, `per_night`, etc.).
 
-5. **Perfiles de negocio para UX de admin**
-   - `bodega`, `restaurante_turnos`, `restaurante_mesas`, `alquiler_coches`, `alquiler_habitaciones`, `generico`.
-   - Cada perfil activa campos y validaciones por defecto.
+5. **Casos de uso orientativos (no cerrados)**
+   - Los casos de uso son guía funcional y no restringen la configuración final del producto.
+   - No implementar ni depender de un metadato `rinac_business_profile`.
 
 6. **Escalabilidad de datos**
    - Mantener CPTs para gestión editorial y administración.
@@ -283,6 +291,181 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 2. Backend de negocio: recursos/participantes, depósito, calendario/listado admin y concurrencia.
 3. Frontend: booking form + integración FullCalendar.
 4. Cierre: templates/overrides y documentación.
+
+### Pendiente de implementación de Slots (estado actual)
+
+1. **Definición operativa de `slot`**
+   - `rinac_slot` es una franja/unidad reservable asociable a productos `rinac_reserva`.
+   - Puede representar horario (p.e. `11:00-12:00`) o unidad según la configuración del producto.
+
+2. **Campos propios de slot en admin**
+   - Añadir UI de metadatos para `rinac_slot`: inicio, fin/etiqueta, capacidad máxima, capacidad mínima opcional, prioridad y estado activo.
+
+3. **Validaciones de negocio**
+   - Validar coherencia de datos de slot (rangos, mínimos/máximos).
+   - Validar solapes cuando aplique y compatibilidad con `rinac_booking_mode`.
+
+4. **Contrato de datos**
+   - Formalizar meta keys de slot y centralizar lectura/escritura para evitar dispersión de claves.
+
+5. **Disponibilidad avanzada por slot**
+  - Completar cálculo por modo (`date`, `datetime`, `slot_dia`, `unidad_rango`, etc.) con reglas de precedencia entre capacidad global y slot.
+
+6. **Exposición en frontend**
+   - Devolver slots disponibles por fecha en endpoints AJAX.
+   - Pintar selector de slots con estados (disponible, completo, no permitido).
+
+7. **Operación y monitorización en admin**
+  - Mejorar el listado de slots con columnas/filtros: franja, capacidad, ocupación, estado, producto.
+
+8. **Concurrencia y calidad**
+   - Reforzar control de colisiones por `slot_id` en `quote/hold`.
+   - Añadir pruebas de capacidad/solapes/bloqueos y documentación operativa.
+
+### Priorización recomendada para Slots
+
+1. Meta boxes y validaciones de `rinac_slot`.
+2. Endpoints con respuesta real de slots disponibles.
+3. Selector frontend de slots.
+4. Tests de concurrencia y regresión.
+
+### Pendiente de implementación de Tipos de participante (estado actual)
+
+1. **Definición operativa**
+   - `rinac_participant` define cómo computa cada persona en capacidad y precio (adulto, niño, bebé, etc.).
+
+2. **UI de campos en admin**
+   - Añadir metadatos en `rinac_participant`: etiqueta pública, fracción de capacidad, tipo de precio, valor de precio, mínimos/máximos por tipo, estado activo y orden.
+
+3. **Validaciones al guardar**
+   - Validar fracción > 0.
+   - Validar `price_type` dentro de valores permitidos.
+   - Validar `price_value` >= 0.
+   - Validar coherencia `min <= max` cuando aplique.
+
+4. **Validaciones en quote/create booking**
+   - Validar existencia, estado activo y pertenencia a tipos permitidos del producto.
+   - Aplicar límites por tipo y validar consistencia de capacidad global.
+
+5. **Motor de precio por estrategia**
+   - Formalizar cálculo por tipo de precio (mínimo: `free` y `fixed`; extensible a futuros tipos).
+
+6. **Exposición y comportamiento frontend**
+   - Exponer por AJAX los tipos permitidos con reglas de fracción/precio/límites.
+   - Renderizar controles por tipo y recalcular en vivo capacidad consumida y total estimado.
+
+7. **UX y errores**
+   - Mostrar mensajes claros para tipo inactivo/no permitido, límites por tipo y capacidad insuficiente.
+
+8. **Calidad**
+   - Añadir tests unitarios e integración para normalización, capacidad, precio y validaciones.
+
+### Criterio de completitud para Tipos de participante
+
+1. Admin gestiona todos los campos clave.
+2. Producto limita tipos permitidos de forma efectiva.
+3. Quote/create booking valida reglas y límites.
+4. Frontend refleja y recalcula correctamente.
+5. Tests cubren reglas críticas.
+
+### Priorización recomendada para Tipos de participante
+
+1. Meta boxes + validaciones de `rinac_participant`.
+2. Validación estricta en `quote/create booking`.
+3. Endpoint/frontend con selector y cálculo en vivo.
+4. Tests y hardening final.
+
+### Pendiente de implementación de Recursos (estado actual)
+
+1. **Definición operativa**
+   - `rinac_resource` es un recurso asociado al producto reservable.
+   - Puede ser `addon` (extra) o `unit` (unidad reservable).
+
+2. **UI de campos en admin**
+   - Añadir metadatos en `rinac_resource`: tipo (`addon`/`unit`), política de precio, valor de precio, estado activo, orden y límites opcionales por cantidad.
+
+3. **Validaciones al guardar**
+   - Validar `resource_type` dentro de valores permitidos.
+   - Validar `price_policy` dentro de (`none`, `fixed`, `per_person`, `per_day`, `per_night`).
+   - Validar `price_value` >= 0 y coherencia de límites.
+
+4. **Validaciones en quote/create booking**
+   - Validar existencia, estado activo y pertenencia a recursos permitidos del producto.
+   - Aplicar límites por recurso y reglas por modo/perfil cuando corresponda.
+
+5. **Motor de precio por estrategia**
+   - Formalizar cálculo por política (`none`, `fixed`, `per_person`, `per_day`, `per_night`).
+
+6. **Exposición y comportamiento frontend**
+   - Exponer por AJAX recursos permitidos con tipo, política, precio, límites y estado.
+   - Renderizar selector de recursos (simple/cantidad) y recalcular en vivo el total.
+
+7. **UX y errores**
+   - Mostrar mensajes claros para recurso no permitido/inactivo, límites y reglas incompatibles.
+
+8. **Calidad**
+   - Añadir tests unitarios e integración para normalización, validaciones y cálculo de precio por política.
+
+### Criterio de completitud para Recursos
+
+1. Admin gestiona todos los campos clave.
+2. Producto limita recursos permitidos de forma efectiva.
+3. Quote/create booking valida reglas y límites.
+4. Frontend refleja selección y precio en vivo.
+5. Tests cubren reglas críticas.
+
+### Priorización recomendada para Recursos
+
+1. Meta boxes + validaciones de `rinac_resource`.
+2. Validación estricta en `quote/create booking`.
+3. Endpoint/frontend con selector y cálculo en vivo.
+4. Tests y hardening final.
+
+### Matriz de meta keys (contrato congelado)
+
+- **Convención final de naming (cerrada)**
+  - Mantener `_rinac_pt_*` para tipos de participante (compatibilidad con implementación actual).
+  - Usar `_rinac_slot_*` para campos específicos de slot.
+  - Usar `_rinac_resource_*` para campos específicos de recurso.
+  - Excepción histórica permitida en slot: `_rinac_capacity_max` y `_rinac_capacity_min`.
+
+1. **Slot (`rinac_slot`)**
+   - `_rinac_slot_label` (string): etiqueta pública opcional (fallback al título del post).
+   - `_rinac_slot_start_time` (string `HH:MM`): hora inicio opcional.
+   - `_rinac_slot_end_time` (string `HH:MM`): hora fin opcional.
+   - `_rinac_capacity_max` (int >= 0): capacidad máxima por slot.
+   - `_rinac_capacity_min` (int >= 0): capacidad mínima opcional por slot.
+   - `_rinac_slot_is_active` (bool 0/1): estado activo.
+   - `_rinac_slot_sort_order` (int >= 0): orden de visualización.
+   - Regla: si inicio/fin existen, `start < end`.
+
+2. **Tipo de participante (`rinac_participant`)**
+   - `_rinac_pt_label` (string): etiqueta pública opcional.
+   - `_rinac_pt_capacity_fraction` (float > 0): fracción de capacidad consumida por unidad.
+   - `_rinac_pt_price_type` (enum): `free`, `fixed` (extensible a futuro).
+   - `_rinac_pt_price_value` (decimal >= 0): valor de precio por estrategia.
+   - `_rinac_pt_min_qty` (int >= 0): mínimo opcional por reserva.
+   - `_rinac_pt_max_qty` (int >= 0): máximo opcional por reserva.
+   - `_rinac_pt_is_active` (bool 0/1): estado activo.
+   - `_rinac_pt_sort_order` (int >= 0): orden de visualización.
+   - Regla: si min/max existen, `min <= max`.
+
+3. **Recurso (`rinac_resource`)**
+   - `_rinac_resource_label` (string): etiqueta pública opcional.
+   - `_rinac_resource_type` (enum): `addon`, `unit`.
+   - `_rinac_resource_price_policy` (enum): `none`, `fixed`, `per_person`, `per_day`, `per_night`.
+   - `_rinac_resource_price_value` (decimal >= 0): valor de precio por política.
+   - `_rinac_resource_min_qty` (int >= 0): mínimo opcional por reserva.
+   - `_rinac_resource_max_qty` (int >= 0): máximo opcional por reserva.
+   - `_rinac_resource_is_active` (bool 0/1): estado activo.
+   - `_rinac_resource_sort_order` (int >= 0): orden de visualización.
+   - Regla: si min/max existen, `min <= max`.
+
+4. **Producto `rinac_reserva` (relaciones)**
+   - `_rinac_allowed_slots` (array<int>): IDs permitidos de `rinac_slot`.
+   - `_rinac_allowed_participant_types` (array<int>): IDs permitidos de `rinac_participant`.
+   - `_rinac_allowed_resources` (array<int>): IDs permitidos de `rinac_resource`.
+   - Regla: quote/create booking solo acepta IDs activos y permitidos en estas listas.
 
 ### Siguiente paso
 
