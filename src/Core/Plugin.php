@@ -27,6 +27,11 @@ class Plugin {
         ( new I18n() )->loadTextdomain();
         ( new PostTypesRegistrar() )->registerPostTypes();
         ( new ProductTypeRegistrar() )->registerProductType();
+
+        if ( class_exists( 'RINAC\\Ajax\\AjaxHandler' ) ) {
+            $ajax_handler_class = 'RINAC\\Ajax\\AjaxHandler';
+            ( new $ajax_handler_class() )->register();
+        }
     }
 
     /**
