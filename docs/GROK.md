@@ -107,3 +107,82 @@ Reglas estrictas:
 - Siempre que sea posible usa funciones nativas de WooCommerce (wc_get_product(), etc.)
 
 Empieza por generar primero el PLAN DE TRABAJO DETALLADO POR PUNTOS. Cuando termine, dime "SIGUIENTE" y continuamos con el paso 1.
+
+ANEXO: CASOS DE USO FUNCIONALES (OBLIGATORIOS)
+
+- Bodega:
+  - Reserva por fecha y slot/turno.
+  - Capacidad por franja.
+  - Participantes por tipo con fracción configurable.
+  - Recursos opcionales (visita guiada, degustación, etc.).
+- Restaurante (opción 1):
+  - Reserva por día y turno.
+  - Límite global por turno y límite opcional por slot.
+  - Precio por comensal.
+- Restaurante (opción 2):
+  - Reserva por mesa/unidad.
+  - Límite por mesa.
+  - Datos de accesibilidad, alergias e intolerancias.
+- Alquiler de coches:
+  - Reserva por día o rango de fechas.
+  - Unidad por modelo/recurso.
+  - Recursos opcionales (limpieza, chófer, etc.).
+- Alquiler de habitaciones:
+  - Reserva por día o rango de fechas.
+  - Unidad por habitación/tipo.
+  - Recursos opcionales (parking, lavandería, etc.).
+- Objetivo común:
+  - Mismo panel admin para todos los escenarios.
+  - Calendario global e individual por producto.
+
+ANEXO: CAMBIOS DE ARQUITECTURA ACORDADOS
+
+1) Modo de reserva por producto (`rinac_booking_mode`)
+- Definir un metadato principal para el producto reservable:
+  - `date`
+  - `date_range`
+  - `datetime`
+  - `date_range_same_time`
+  - `turno_dia`
+  - `unidad_rango`
+- El cálculo de disponibilidad debe resolverse por estrategia según ese modo.
+
+2) Capacidad en dos niveles
+- Capacidad global del producto.
+- Capacidad por slot/turno/unidad.
+- La capacidad efectiva será el mínimo entre límites aplicables.
+
+3) Participantes formalizados
+- `rinac_participant_type` debe soportar:
+  - tipo de precio,
+  - valor de precio,
+  - fracción de capacidad,
+  - límites por tipo (opcional).
+
+4) Recursos formalizados
+- `rinac_resource` debe diferenciar:
+  - `addon` (extra),
+  - `unit` (unidad reservable).
+- Política de precio por recurso:
+  - `none`, `fixed`, `per_person`, `per_day`, `per_night`.
+
+5) Perfil de negocio para simplificar UX
+- Añadir perfiles:
+  - `bodega`
+  - `restaurante_turnos`
+  - `restaurante_mesas`
+  - `alquiler_coches`
+  - `alquiler_habitaciones`
+  - `generico`
+- Cada perfil activa campos y validaciones por defecto.
+
+6) Concurrencia y bloqueo temporal (quote/hold)
+- Incluir endpoint de prevalidación (`rinac_quote_booking`) que:
+  - valide disponibilidad,
+  - calcule precio preliminar,
+  - reserve temporalmente capacidad.
+- Confirmar luego con `rinac_create_booking_request` reutilizando el bloqueo vigente.
+
+7) Escalabilidad de datos
+- Mantener CPTs para administración y edición.
+- Prever tabla técnica para consultas intensivas de disponibilidad y solapes.

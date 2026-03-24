@@ -146,7 +146,8 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 
 9. **Disponibilidad y capacidad (AvailabilityManager)**
    - Calcula capacidad restante: total - ocupación.
-   - Maneja solapamientos según el modelo (slots/turnos).
+   - Maneja solapamientos según el modelo (slots/turnos/unidades/rangos).
+   - Resolver por estrategia según `rinac_booking_mode`.
    - Cache con transients (clave determinística por producto + rango + parámetros relevantes).
 
 10. **Frontend: booking form + FullCalendar**
@@ -175,7 +176,15 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
    - `README.md` con instalación, flujo de reservas, endpoints (conceptual), seguridad y i18n.
    - Inline docs en clases críticas (`AjaxHandler`, `AvailabilityManager`, etc.).
 
-16. **Nota importante sobre “versión anterior”**
+16. **Concurrencia y bloqueos temporales (quote/hold)**
+   - Añadir endpoint de prevalidación (`rinac_quote_booking`) para:
+     - validar disponibilidad y reglas,
+     - calcular precio preliminar,
+     - crear bloqueo temporal de capacidad.
+   - Confirmación posterior por `rinac_create_booking_request` reutilizando el bloqueo activo.
+   - TTL recomendado de bloqueo: 10-15 minutos.
+
+17. **Nota importante sobre “versión anterior”**
    - El documento base menciona casos de uso (bodega, restaurante opción1/2, alquiler coches/habitaciones) “exactamente igual que en la versión anterior”.
    - Para respetar esa parte, hace falta que se incluya el texto/documento de la versión anterior.
 
@@ -192,6 +201,72 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 5. **Estructura de traducciones**:
    - Mantener `.pot/.po` (si se generan) bajo `languages/` y empaquetar `.mo` en `languages/` cuando corresponda.
    - Usar el mismo `languages/` definido por `domain_path` en el `load_plugin_textdomain()`.
+
+### Casos de uso funcionales incluidos (alcance)
+
+1. **Bodega**
+   - Reserva por fecha y slot/turno.
+   - Capacidad por franja.
+   - Participantes por tipo (adulto/niño/bebé...) con fracción configurable.
+   - Recursos opcionales (por ejemplo visita guiada, degustación).
+
+2. **Restaurante (opción 1)**
+   - Reserva por día y turno.
+   - Límite global de comensales por turno.
+   - Límite opcional por slot dentro del turno.
+   - Precio por comensal como ajuste sobre precio base.
+
+3. **Restaurante (opción 2)**
+   - Reserva por mesa/unidad.
+   - Límite de comensales por mesa.
+   - Datos adicionales de accesibilidad, alergias e intolerancias.
+
+4. **Alquiler de coches**
+   - Reserva por día o rango de fechas.
+   - Unidad reservable por modelo o recurso asociado.
+   - Recursos opcionales (limpieza, chófer, etc.).
+
+5. **Alquiler de habitaciones**
+   - Reserva por día o rango de fechas.
+   - Unidad reservable por habitación/tipo.
+   - Recursos opcionales (parking, lavandería, etc.).
+
+6. **Objetivo común**
+   - Usar el mismo panel de administración para todos los escenarios.
+   - Disponer de calendario global e individual por producto.
+
+### Cambios de arquitectura acordados
+
+1. **Modo de reserva por producto (`rinac_booking_mode`)**
+   - Valores previstos:
+     - `date`
+     - `date_range`
+     - `datetime`
+     - `date_range_same_time`
+     - `turno_dia`
+     - `unidad_rango`
+   - `AvailabilityManager` debe resolver reglas por estrategia según modo.
+
+2. **Capacidad en dos niveles**
+   - Capacidad global del producto.
+   - Capacidad por slot/turno/unidad.
+   - Capacidad efectiva por validación: mínimo entre límites aplicables.
+
+3. **Participantes como entidad de negocio**
+   - Metadatos por `rinac_participant_type` para precio y fracción de capacidad.
+   - Reglas de mínimos/máximos por tipo cuando aplique.
+
+4. **Recursos tipados**
+   - `addon` (extra opcional) y `unit` (unidad reservable).
+   - Política de precio por recurso (`fixed`, `per_person`, `per_day`, `per_night`, etc.).
+
+5. **Perfiles de negocio para UX de admin**
+   - `bodega`, `restaurante_turnos`, `restaurante_mesas`, `alquiler_coches`, `alquiler_habitaciones`, `generico`.
+   - Cada perfil activa campos y validaciones por defecto.
+
+6. **Escalabilidad de datos**
+   - Mantener CPTs para gestión editorial y administración.
+   - Prever tabla técnica para lecturas intensivas de disponibilidad/ocupación.
 
 ### Siguiente paso
 
