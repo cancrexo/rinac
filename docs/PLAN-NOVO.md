@@ -63,7 +63,7 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
    - `RINAC\Booking\ParticipantManager` (tipos de participantes, precio/fracción, totalizadores).
    - `RINAC\Admin\GlobalCalendarPage` (pantalla admin calendario global + listado).
    - `RINAC\Admin\BookingListTable` (listado/paginación de `rinac_booking` en admin).
-   - `RINAC\Admin\BookingMetaBoxes` (meta boxes y settings para `rinac_reserva`).
+  - `RINAC\Admin\BookingProductDataTabs` (pestañas dentro de `woocommerce-product-data` para `rinac_reserva`).
    - `RINAC\Admin\DemoDataImporter` (importador “Importar datos de prueba” para admin).
    - `RINAC\Frontend\BookingForm` (render del formulario frontend + integración con FullCalendar).
    - `RINAC\Frontend\Assets` (enqueue de JS/CSS y `wp_localize_script`).
@@ -81,7 +81,9 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
          - la carga de traducciones para JS (si se usa) vía `wp_set_script_translations()` (cuando aplique),
          - y cualquier registro adicional relacionado con i18n.
      - `admin_menu`: crear menú/submenús “RINAC” (solo admin).
-     - `admin_init`: registrar meta boxes y ajustes para `rinac_reserva`.
+   - `woocommerce_product_data_tabs`: registrar pestaña(s) de `rinac_reserva`.
+   - `woocommerce_product_data_panels`: renderizar paneles de `rinac_reserva`.
+   - `woocommerce_process_product_meta`: guardar metadatos de `rinac_reserva`.
      - `wp_enqueue_scripts`: cargar assets frontend y localizar endpoints/nonce.
    - WooCommerce:
      - `woocommerce_register_product_type` (vía registro en `ProductTypeRegistrar`).
@@ -152,13 +154,24 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
      3. `rinac_create_booking_request`
    - Respuesta JSON consistente y sanitizada.
 
-8. **Meta boxes y settings para `rinac_reserva`**
-   - Añadir meta boxes en edición del producto `rinac_reserva`:
-     - Capacidad base / reglas.
-    - Qué CPTs aplica (slots/resources/participant types permitidos).
-     - Reglas de disponibilidad.
-     - Ajustes para depósito (si aplica).
-   - Guardado con `nonce` + capability check + sanitización.
+8. **Pestañas `woocommerce-product-data` y settings para `rinac_reserva`**
+   - Añadir pestañas adicionales dentro del bloque `woocommerce-product-data` para el producto `rinac_reserva`:
+     - `Configuración de producto`:
+       - modo de reserva (`rinac_booking_mode`)
+       - capacidad base (`_rinac_base_capacity`)
+       - capacidad global máxima (`_rinac_capacity_total_max`)
+       - depósito (%) (`_rinac_deposit_percentage`)
+     - `Configuración base`:
+       - capacidad mínima por reserva (`_rinac_capacity_min_booking`)
+     - `Slots`:
+       - selección multivalor de slots permitidos (`_rinac_allowed_slots`)
+     - `Participantes`:
+       - selección multivalor de tipos de participante permitidos (`_rinac_allowed_participant_types`)
+     - `Recursos`:
+       - selección multivalor de recursos permitidos (`_rinac_allowed_resources`)
+     - `Disponibilidad`:
+       - reglas de disponibilidad (`_rinac_availability_rules`, texto o JSON)
+   - Guardado con `nonce` + capability check + sanitización usando `woocommerce_process_product_meta`.
 
 9. **Disponibilidad y capacidad (AvailabilityManager)**
    - Calcula capacidad restante: total - ocupación.

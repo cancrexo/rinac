@@ -103,7 +103,7 @@ Después de mostrarme ese plan detallado, desarrolla el plugin paso a paso en es
 
 1. Configuración inicial: composer.json, rinac.php, PSR-4, activación/desactivación, registro correcto del tipo de producto rinac_reserva, registro de todos los CPTs + creación del menú "RINAC" + datos mínimos de prueba en activación
 2. Clase AjaxHandler centralizada + ejemplo de 3 endpoints
-3. Meta boxes y settings para productos de tipo rinac_reserva
+3. Pestañas `woocommerce-product-data` y settings para productos de tipo rinac_reserva
 4. Lógica de disponibilidad y cálculo de capacidad (clase AvailabilityManager)
 5. Gestión de recursos y participantes
 6. Sistema de pago depósito + hooks de WooCommerce
@@ -112,6 +112,24 @@ Después de mostrarme ese plan detallado, desarrolla el plugin paso a paso en es
 9. Frontend booking form + FullCalendar integración
 10. Templates y overrides
 11. Documentación completa (README.md + inline docs)
+
+Detalle Paso 3 (admin UX):
+- En lugar de un meta box propio, la configuración del producto `rinac_reserva` se gestiona con pestañas dentro de `woocommerce-product-data`.
+- Pestaña `Configuración de producto`:
+  - modo de reserva (`rinac_booking_mode`)
+  - capacidad base (`_rinac_base_capacity`)
+  - capacidad global máxima (`_rinac_capacity_total_max`)
+  - depósito (`_rinac_deposit_percentage`)
+- Pestaña `Configuración base`:
+  - capacidad mínima por reserva (`_rinac_capacity_min_booking`)
+- Pestaña `Slots`:
+  - selección multivalor de slots permitidos (`_rinac_allowed_slots`)
+- Pestaña `Participantes`:
+  - selección multivalor de tipos de participante permitidos (`_rinac_allowed_participant_types`)
+- Pestaña `Recursos`:
+  - selección multivalor de recursos permitidos (`_rinac_allowed_resources`)
+- Pestaña `Disponibilidad`:
+  - reglas de disponibilidad (`_rinac_availability_rules`, texto o JSON)
 
 Reglas estrictas:
 - Todo código limpio, comentado, con namespaces
