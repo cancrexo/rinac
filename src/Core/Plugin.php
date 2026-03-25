@@ -15,6 +15,7 @@ class Plugin {
     public function register(): void {
         add_action( 'init', array( $this, 'onInit' ) );
         add_action( 'admin_menu', array( $this, 'onAdminMenu' ) );
+        add_action( 'admin_init', array( $this, 'onAdminInit' ) );
         add_action( 'wp_enqueue_scripts', array( $this, 'onFrontendAssets' ) );
     }
 
@@ -41,6 +42,18 @@ class Plugin {
      */
     public function onAdminMenu(): void {
         ( new MenuRegistrar() )->registerAdminMenu();
+    }
+
+    /**
+     * Inicializa funcionalidades de admin.
+     *
+     * @return void
+     */
+    public function onAdminInit(): void {
+        if ( class_exists( 'RINAC\\Admin\\BookingProductDataTabs' ) ) {
+            $booking_tabs_class = 'RINAC\\Admin\\BookingProductDataTabs';
+            ( new $booking_tabs_class() )->register();
+        }
     }
 
     /**
