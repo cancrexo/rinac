@@ -116,12 +116,11 @@ Después de mostrarme ese plan detallado, desarrolla el plugin paso a paso en es
 Detalle Paso 3 (admin UX):
 - En lugar de un meta box propio, la configuración del producto `rinac_reserva` se gestiona con pestañas dentro de `woocommerce-product-data`.
 - Pestaña `Configuración de producto`:
-  - modo de reserva (`rinac_booking_mode`)
-  - capacidad base (`_rinac_base_capacity`)
-  - capacidad global máxima (`_rinac_capacity_total_max`)
-  - depósito (`_rinac_deposit_percentage`)
-- Pestaña `Configuración base`:
-  - capacidad mínima por reserva (`_rinac_capacity_min_booking`)
+  - modo de reserva (`rinac_booking_mode`): define la estrategia (fecha, rango, etc.) que usa la disponibilidad y la interpretación del flujo de reserva.
+  - capacidad base (`_rinac_base_capacity`): capacidad base del producto usada para calcular la **capacidad efectiva global**.
+  - capacidad mínima por reserva (`_rinac_capacity_min_booking`): mínimo requerido de capacidad restante para que una reserva sea válida.
+  - capacidad global máxima (`_rinac_capacity_total_max`): tope global que limita la capacidad efectiva del producto (en esta fase, se aplica como limitación del total).
+  - depósito (`_rinac_deposit_percentage`): porcentaje de depósito (se usará en la lógica de pago/estado del order; en esta fase no limita la capacidad).
 - Pestaña `Slots`:
   - selección multivalor de slots permitidos (`_rinac_allowed_slots`)
 - Pestaña `Participantes`:

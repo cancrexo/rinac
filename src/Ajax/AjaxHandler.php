@@ -189,6 +189,26 @@ class AjaxHandler {
         $product_id = isset( $request['product_id'] ) ? absint( $request['product_id'] ) : 0;
         $start = isset( $request['start'] ) ? sanitize_text_field( wp_unslash( (string) $request['start'] ) ) : '';
         $end = isset( $request['end'] ) ? sanitize_text_field( wp_unslash( (string) $request['end'] ) ) : '';
+        $slot_id = isset( $request['slot_id'] ) ? absint( $request['slot_id'] ) : 0;
+
+        if ( $product_id <= 0 ) {
+            wp_send_json_error(
+                array(
+                    'message' => esc_html__( 'Producto inválido.', 'rinac' ),
+                ),
+                400
+            );
+        }
+
+        $availability_manager = new \RINAC\Calendar\AvailabilityManager();
+        $availability = $availability_manager->getAvailability(
+            $product_id,
+            $start,
+            $end,
+            $slot_id > 0 ? $slot_id : null
+        );
+
+        $message = $availability['available'] ? esc_html__( 'Disponibilidad calculada.', 'rinac' ) : esc_html__( 'No hay disponibilidad para la consulta.', 'rinac' );
 
         wp_send_json_success(
             array(
@@ -197,12 +217,10 @@ class AjaxHandler {
                 'query' => array(
                     'start' => $start,
                     'end'   => $end,
+                    'slot_id' => $slot_id > 0 ? $slot_id : null,
                 ),
-                'data' => array(
-                    'available' => true,
-                    'remaining_capacity' => null,
-                ),
-                'message' => esc_html__( 'Endpoint base de disponibilidad.', 'rinac' ),
+                'data' => $availability,
+                'message' => $message,
             )
         );
     }

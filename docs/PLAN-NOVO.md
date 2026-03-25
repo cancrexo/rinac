@@ -157,12 +157,11 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 8. **Pestañas `woocommerce-product-data` y settings para `rinac_reserva`**
    - Añadir pestañas adicionales dentro del bloque `woocommerce-product-data` para el producto `rinac_reserva`:
      - `Configuración de producto`:
-       - modo de reserva (`rinac_booking_mode`)
-       - capacidad base (`_rinac_base_capacity`)
-       - capacidad global máxima (`_rinac_capacity_total_max`)
-       - depósito (%) (`_rinac_deposit_percentage`)
-     - `Configuración base`:
-       - capacidad mínima por reserva (`_rinac_capacity_min_booking`)
+       - modo de reserva (`rinac_booking_mode`): define la estrategia (fecha, rango, etc.) que usa la disponibilidad y la interpretación del flujo de reserva.
+       - capacidad base (`_rinac_base_capacity`): capacidad base del producto usada para calcular la **capacidad efectiva global**.
+       - capacidad mínima por reserva (`_rinac_capacity_min_booking`): mínimo requerido de capacidad restante para que una reserva sea válida.
+       - capacidad global máxima (`_rinac_capacity_total_max`): tope global que limita la capacidad efectiva del producto (en esta fase, se aplica como limitación del total).
+       - depósito (%) (`_rinac_deposit_percentage`): porcentaje de depósito (se usará en la lógica de pago/estado del order; en esta fase no limita la capacidad).
      - `Slots`:
        - selección multivalor de slots permitidos (`_rinac_allowed_slots`)
      - `Participantes`:
