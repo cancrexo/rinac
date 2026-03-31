@@ -30,23 +30,23 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 - [ ] Añadir tests (capacidad, solapes y bloqueos por slot) y documentación operativa.
 
 #### Fase Tipos de participante
-- [ ] Añadir metadatos editables en `rinac_participant` (etiqueta pública, fracción, tipo/valor de precio, mínimos/máximos, activo, orden).
-- [ ] Implementar validaciones de guardado (fracción > 0, `price_type` válido, `price_value` >= 0, coherencia min/max).
-- [ ] Validar en `quote/create booking` que el tipo exista, esté activo y permitido para el producto.
+- [x] Añadir metadatos editables en `rinac_participant` (etiqueta pública, fracción, tipo/valor de precio, mínimos/máximos, activo, orden).
+- [x] Implementar validaciones de guardado (fracción > 0, `price_type` válido, `price_value` >= 0, coherencia min/max).
+- [x] Validar en `quote/create booking` que el tipo exista, esté activo y permitido para el producto.
 - [ ] Aplicar límites por tipo y validación de capacidad global derivada de fracciones.
-- [ ] Formalizar cálculo de precio por estrategia (`free`, `fixed`, extensible).
-- [ ] Exponer en AJAX tipos permitidos con reglas (fracción/precio/límites/estado).
+- [x] Formalizar cálculo de precio por estrategia (`free`, `fixed`, extensible).
+- [x] Exponer en AJAX tipos permitidos con reglas (fracción/precio/límites/estado).
 - [ ] Implementar UI frontend de cantidades por tipo y recálculo en vivo.
 - [ ] Mostrar errores de negocio claros (no permitido, inactivo, límites, capacidad insuficiente).
 - [ ] Añadir tests unitarios/integración para normalización, capacidad, precio y validaciones.
 
 #### Fase Recursos
-- [ ] Añadir metadatos editables en `rinac_resource` (tipo `addon/unit`, política de precio, valor, activo, orden y límites opcionales).
-- [ ] Implementar validaciones de guardado (`resource_type` válido, `price_policy` válida, `price_value` >= 0 y coherencia de límites).
-- [ ] Validar en `quote/create booking` que el recurso exista, esté activo y permitido para el producto.
+- [x] Añadir metadatos editables en `rinac_resource` (tipo `addon/unit`, política de precio, valor, activo, orden y límites opcionales).
+- [x] Implementar validaciones de guardado (`resource_type` válido, `price_policy` válida, `price_value` >= 0 y coherencia de límites).
+- [x] Validar en `quote/create booking` que el recurso exista, esté activo y permitido para el producto.
 - [ ] Aplicar límites por recurso y reglas por modo/perfil cuando aplique.
-- [ ] Formalizar cálculo de precio por política (`none`, `fixed`, `per_person`, `per_day`, `per_night`).
-- [ ] Exponer en AJAX recursos permitidos con reglas (tipo/política/precio/límites/estado).
+- [x] Formalizar cálculo de precio por política (`none`, `fixed`, `per_person`, `per_day`, `per_night`).
+- [x] Exponer en AJAX recursos permitidos con reglas (tipo/política/precio/límites/estado).
 - [ ] Implementar UI frontend de selección de recursos (simple/cantidad) con recálculo en vivo.
 - [ ] Mostrar errores de negocio claros (no permitido, inactivo, límites, incompatibilidades).
 - [ ] Añadir tests unitarios/integración para normalización, validaciones y cálculo por política.

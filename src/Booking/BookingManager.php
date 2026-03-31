@@ -36,13 +36,20 @@ class BookingManager {
      *                                      ...
      *                                  ]
      *
+     * @param array      $context      Contexto adicional de cálculo.
+     *                                  Claves opcionales:
+     *                                  - 'days' => int
+     *                                  - 'nights' => int
+     *
      * @return array|WP_Error
      *   - array con claves:
      *     - 'participants' => array normalizado
      *     - 'resources'    => array normalizado
+     *     - 'pricing'      => resumen de precio preliminar
+     *     - 'capacity'     => resumen de capacidad equivalente
      *   - o `WP_Error` con código/mensajes de validación.
      */
-    public function validateBookingRequest( $product, array $participants, array $resources ) {
+    public function validateBookingRequest( $product, array $participants, array $resources, array $context = array() ) {
         $product_id = is_object( $product ) && method_exists( $product, 'get_id' )
             ? (int) $product->get_id()
             : 0;
@@ -53,6 +60,13 @@ class BookingManager {
         $normalized_participants = array();
         $normalized_resources    = array();
         $errors                  = array();
+        $participants_units      = 0;
+        $capacity_equivalent     = 0.0;
+        $participants_subtotal   = 0.0;
+        $resources_subtotal      = 0.0;
+
+        $days = isset( $context['days'] ) ? max( 1, (int) $context['days'] ) : 1;
+        $nights = isset( $context['nights'] ) ? max( 1, (int) $context['nights'] ) : 1;
 
         // Validación de participantes.
         foreach ( $participants as $item ) {
@@ -115,10 +129,31 @@ class BookingManager {
                 continue;
             }
 
+            $price_type = (string) get_post_meta( $participant_id, '_rinac_pt_price_type', true );
+            $price_value = (float) get_post_meta( $participant_id, '_rinac_pt_price_value', true );
+            $price_value = max( 0.0, $price_value );
+            if ( '' === $price_type ) {
+                $price_type = 'free';
+            }
+            $line_total = $this->calculateParticipantLineTotal( $price_type, $price_value, $qty );
+
+            $capacity_fraction = (float) get_post_meta( $participant_id, '_rinac_pt_capacity_fraction', true );
+            if ( $capacity_fraction <= 0 ) {
+                $capacity_fraction = 1.0;
+            }
+
             $normalized_participants[] = array(
-                'id'  => $participant_id,
-                'qty' => $qty,
+                'id'                => $participant_id,
+                'qty'               => $qty,
+                'price_type'        => $price_type,
+                'price_value'       => $price_value,
+                'line_total'        => $line_total,
+                'capacity_fraction' => $capacity_fraction,
             );
+
+            $participants_units += $qty;
+            $capacity_equivalent += $qty * $capacity_fraction;
+            $participants_subtotal += $line_total;
         }
 
         // Validación de recursos.
@@ -182,10 +217,30 @@ class BookingManager {
                 continue;
             }
 
-            $normalized_resources[] = array(
-                'id'  => $resource_id,
-                'qty' => $qty,
+            $price_policy = (string) get_post_meta( $resource_id, '_rinac_resource_price_policy', true );
+            $price_value = (float) get_post_meta( $resource_id, '_rinac_resource_price_value', true );
+            $price_value = max( 0.0, $price_value );
+            if ( '' === $price_policy ) {
+                $price_policy = 'none';
+            }
+            $line_total = $this->calculateResourceLineTotal(
+                $price_policy,
+                $price_value,
+                $qty,
+                $participants_units,
+                $days,
+                $nights
             );
+
+            $normalized_resources[] = array(
+                'id'           => $resource_id,
+                'qty'          => $qty,
+                'price_policy' => $price_policy,
+                'price_value'  => $price_value,
+                'line_total'   => $line_total,
+            );
+
+            $resources_subtotal += $line_total;
         }
 
         if ( ! empty( $errors ) ) {
@@ -201,7 +256,74 @@ class BookingManager {
         return array(
             'participants' => $normalized_participants,
             'resources'    => $normalized_resources,
+            'pricing'      => array(
+                'subtotal_participants' => round( $participants_subtotal, 2 ),
+                'subtotal_resources'    => round( $resources_subtotal, 2 ),
+                'total_estimated'       => round( $participants_subtotal + $resources_subtotal, 2 ),
+            ),
+            'capacity'     => array(
+                'participants_units' => $participants_units,
+                'equivalent_total'   => round( $capacity_equivalent, 2 ),
+            ),
         );
+    }
+
+    /**
+     * Cálculo de línea por participante.
+     *
+     * @param string $price_type  Tipo de precio (`free`, `fixed`).
+     * @param float  $price_value Valor unitario.
+     * @param int    $qty         Cantidad.
+     * @return float
+     */
+    private function calculateParticipantLineTotal( string $price_type, float $price_value, int $qty ): float {
+        if ( $qty <= 0 ) {
+            return 0.0;
+        }
+
+        if ( 'fixed' === $price_type ) {
+            return $price_value * $qty;
+        }
+
+        return 0.0;
+    }
+
+    /**
+     * Cálculo de línea por recurso según política.
+     *
+     * @param string $price_policy       Política (`none`, `fixed`, `per_person`, `per_day`, `per_night`).
+     * @param float  $price_value        Valor unitario.
+     * @param int    $qty                Cantidad de recurso.
+     * @param int    $participants_units Número total de participantes (unidades).
+     * @param int    $days               Días (mínimo 1).
+     * @param int    $nights             Noches (mínimo 1).
+     * @return float
+     */
+    private function calculateResourceLineTotal(
+        string $price_policy,
+        float $price_value,
+        int $qty,
+        int $participants_units,
+        int $days,
+        int $nights
+    ): float {
+        if ( $qty <= 0 ) {
+            return 0.0;
+        }
+
+        switch ( $price_policy ) {
+            case 'fixed':
+                return $price_value * $qty;
+            case 'per_person':
+                return $price_value * $qty * max( 1, $participants_units );
+            case 'per_day':
+                return $price_value * $qty * max( 1, $days );
+            case 'per_night':
+                return $price_value * $qty * max( 1, $nights );
+            case 'none':
+            default:
+                return 0.0;
+        }
     }
 
     /**

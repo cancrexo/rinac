@@ -31,6 +31,8 @@ class AjaxHandler {
             'rinac_get_availability',
             'rinac_get_calendar_events',
             'rinac_create_booking_request',
+            'rinac_get_allowed_participants',
+            'rinac_get_allowed_resources',
         );
 
         foreach ( $endpoints as $endpoint ) {
@@ -76,6 +78,12 @@ class AjaxHandler {
                 break;
             case 'rinac_create_booking_request':
                 $this->handleCreateBookingRequest();
+                break;
+            case 'rinac_get_allowed_participants':
+                $this->handleGetAllowedParticipants();
+                break;
+            case 'rinac_get_allowed_resources':
+                $this->handleGetAllowedResources();
                 break;
             default:
                 wp_send_json_error(
@@ -160,6 +168,8 @@ class AjaxHandler {
         $read_only_endpoints = array(
             'rinac_get_availability',
             'rinac_get_calendar_events',
+            'rinac_get_allowed_participants',
+            'rinac_get_allowed_resources',
         );
 
         if ( in_array( $endpoint, $read_only_endpoints, true ) ) {
@@ -284,6 +294,8 @@ class AjaxHandler {
         $raw_resources = isset( $request['resources'] ) && is_array( $request['resources'] )
             ? $request['resources']
             : array();
+        $days = isset( $request['days'] ) ? absint( $request['days'] ) : 1;
+        $nights = isset( $request['nights'] ) ? absint( $request['nights'] ) : 1;
 
         $participants = array();
         foreach ( $raw_participants as $item ) {
@@ -316,7 +328,15 @@ class AjaxHandler {
         }
 
         $booking_manager = new \RINAC\Booking\BookingManager();
-        $validation = $booking_manager->validateBookingRequest( $product, $participants, $resources );
+        $validation = $booking_manager->validateBookingRequest(
+            $product,
+            $participants,
+            $resources,
+            array(
+                'days' => $days,
+                'nights' => $nights,
+            )
+        );
 
         if ( is_wp_error( $validation ) ) {
             wp_send_json_error(
@@ -339,8 +359,130 @@ class AjaxHandler {
                     'slot_id' => $slot_id,
                     'participants' => $validation['participants'],
                     'resources'    => $validation['resources'],
+                    'pricing'      => $validation['pricing'],
+                    'capacity'     => $validation['capacity'],
                 ),
                 'message' => esc_html__( 'Solicitud de reserva validada (sin persistir).', 'rinac' ),
+            )
+        );
+    }
+
+    /**
+     * Devuelve tipos de participante permitidos para un producto.
+     *
+     * @return void
+     */
+    private function handleGetAllowedParticipants(): void {
+        /** @noinspection PhpUndefinedVariableInspection */
+        $request = isset( $_REQUEST ) && is_array( $_REQUEST ) ? $_REQUEST : array();
+
+        $product_id = isset( $request['product_id'] ) ? absint( $request['product_id'] ) : 0;
+        if ( $product_id <= 0 ) {
+            wp_send_json_error(
+                array(
+                    'message' => esc_html__( 'Producto inválido.', 'rinac' ),
+                ),
+                400
+            );
+        }
+
+        $allowed_ids = get_post_meta( $product_id, '_rinac_allowed_participant_types', true );
+        if ( ! is_array( $allowed_ids ) ) {
+            $allowed_ids = array();
+        }
+        $allowed_ids = array_values( array_unique( array_filter( array_map( 'absint', $allowed_ids ) ) ) );
+
+        $items = array();
+        foreach ( $allowed_ids as $id ) {
+            $post = get_post( $id );
+            if ( ! $post || 'rinac_participant' !== $post->post_type ) {
+                continue;
+            }
+
+            $is_active = (int) get_post_meta( $id, '_rinac_pt_is_active', true );
+            if ( 1 !== $is_active ) {
+                continue;
+            }
+
+            $items[] = array(
+                'id'                => $id,
+                'label'             => get_post_meta( $id, '_rinac_pt_label', true ) ?: get_the_title( $id ),
+                'capacity_fraction' => (float) get_post_meta( $id, '_rinac_pt_capacity_fraction', true ),
+                'price_type'        => (string) get_post_meta( $id, '_rinac_pt_price_type', true ),
+                'price_value'       => (float) get_post_meta( $id, '_rinac_pt_price_value', true ),
+                'min_qty'           => (int) get_post_meta( $id, '_rinac_pt_min_qty', true ),
+                'max_qty'           => (int) get_post_meta( $id, '_rinac_pt_max_qty', true ),
+                'is_active'         => 1,
+                'sort_order'        => (int) get_post_meta( $id, '_rinac_pt_sort_order', true ),
+            );
+        }
+
+        wp_send_json_success(
+            array(
+                'endpoint'   => 'rinac_get_allowed_participants',
+                'product_id' => $product_id,
+                'items'      => $items,
+                'message'    => esc_html__( 'Tipos de participante permitidos obtenidos.', 'rinac' ),
+            )
+        );
+    }
+
+    /**
+     * Devuelve recursos permitidos para un producto.
+     *
+     * @return void
+     */
+    private function handleGetAllowedResources(): void {
+        /** @noinspection PhpUndefinedVariableInspection */
+        $request = isset( $_REQUEST ) && is_array( $_REQUEST ) ? $_REQUEST : array();
+
+        $product_id = isset( $request['product_id'] ) ? absint( $request['product_id'] ) : 0;
+        if ( $product_id <= 0 ) {
+            wp_send_json_error(
+                array(
+                    'message' => esc_html__( 'Producto inválido.', 'rinac' ),
+                ),
+                400
+            );
+        }
+
+        $allowed_ids = get_post_meta( $product_id, '_rinac_allowed_resources', true );
+        if ( ! is_array( $allowed_ids ) ) {
+            $allowed_ids = array();
+        }
+        $allowed_ids = array_values( array_unique( array_filter( array_map( 'absint', $allowed_ids ) ) ) );
+
+        $items = array();
+        foreach ( $allowed_ids as $id ) {
+            $post = get_post( $id );
+            if ( ! $post || 'rinac_resource' !== $post->post_type ) {
+                continue;
+            }
+
+            $is_active = (int) get_post_meta( $id, '_rinac_resource_is_active', true );
+            if ( 1 !== $is_active ) {
+                continue;
+            }
+
+            $items[] = array(
+                'id'           => $id,
+                'label'        => get_post_meta( $id, '_rinac_resource_label', true ) ?: get_the_title( $id ),
+                'resource_type'=> (string) get_post_meta( $id, '_rinac_resource_type', true ),
+                'price_policy' => (string) get_post_meta( $id, '_rinac_resource_price_policy', true ),
+                'price_value'  => (float) get_post_meta( $id, '_rinac_resource_price_value', true ),
+                'min_qty'      => (int) get_post_meta( $id, '_rinac_resource_min_qty', true ),
+                'max_qty'      => (int) get_post_meta( $id, '_rinac_resource_max_qty', true ),
+                'is_active'    => 1,
+                'sort_order'   => (int) get_post_meta( $id, '_rinac_resource_sort_order', true ),
+            );
+        }
+
+        wp_send_json_success(
+            array(
+                'endpoint'   => 'rinac_get_allowed_resources',
+                'product_id' => $product_id,
+                'items'      => $items,
+                'message'    => esc_html__( 'Recursos permitidos obtenidos.', 'rinac' ),
             )
         );
     }
