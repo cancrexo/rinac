@@ -54,6 +54,16 @@ class Plugin {
             $booking_tabs_class = 'RINAC\\Admin\\BookingProductDataTabs';
             ( new $booking_tabs_class() )->register();
         }
+
+        if ( class_exists( 'RINAC\\Admin\\ParticipantMetaBoxes' ) ) {
+            $participant_meta_class = 'RINAC\\Admin\\ParticipantMetaBoxes';
+            ( new $participant_meta_class() )->register();
+        }
+
+        if ( class_exists( 'RINAC\\Admin\\ResourceMetaBoxes' ) ) {
+            $resource_meta_class = 'RINAC\\Admin\\ResourceMetaBoxes';
+            ( new $resource_meta_class() )->register();
+        }
     }
 
     /**
