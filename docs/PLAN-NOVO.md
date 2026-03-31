@@ -179,38 +179,126 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
    - Cache con transients (clave determinística por producto + rango + parámetros relevantes).
 
 10. **Gestión de recursos y participantes**
-   - `ResourceManager` relaciona recursos seleccionados.
-   - `ParticipantManager` gestiona tipos, precio/fracción, totalizadores.
-   - `BookingManager` valida todo junto.
+   - Objetivo: que el backend pueda modelar completamente `rinac_participant` y `rinac_resource`, y que el producto limite qué IDs son válidos en `quote/create booking`.
+   - `ParticipantManager`:
+     - Usar el contrato `_rinac_pt_*` para fracción de capacidad, tipo/valor de precio y límites por tipo.
+     - Ofrecer helpers para:
+       - convertir cantidades por tipo en **equivalente de capacidad**,
+       - calcular precio total por estrategia (`free`, `fixed`, extensible),
+       - validar límites por tipo (min/max) y estado activo.
+   - `ResourceManager`:
+     - Usar el contrato `_rinac_resource_*` para tipo (`addon`/`unit`), política de precio y límites de cantidad.
+     - Calcular el impacto económico de recursos según política (`none`, `fixed`, `per_person`, `per_day`, `per_night`).
+   - `BookingManager`:
+     - Orquestar validaciones de negocio combinando:
+       - capacidad global/por slot (AvailabilityManager),
+       - tipos de participante permitidos (`_rinac_allowed_participant_types`),
+       - recursos permitidos (`_rinac_allowed_resources`).
+     - Definir un punto único de entrada para validar y persistir reservas (`rinac_booking` + relación con pedidos WooCommerce).
+   - Criterio de completitud:
+     - Admin puede gestionar tipos de participante y recursos con todos los campos clave.
+     - El producto limita correctamente IDs permitidos (participantes/recursos).
+     - `quote/create booking` falla con errores claros cuando se violan reglas de negocio (capacidad, límites, estado activo, permisos por producto).
 
 11. **Sistema de pago con depósito + hooks WooCommerce**
-   - `DepositManager` define depósito y transiciones de estado.
-   - Integración con hooks WooCommerce para aplicar lógica sin plugins externos.
+   - Objetivo: soportar reservas con pago completo o con depósito % configurable, manteniendo la lógica en el plugin (sin depender de otros plugins de pago parcial).
+   - `DepositManager`:
+     - Calcular el importe del depósito a partir de:
+       - precio base del producto,
+       - participantes y recursos añadidos,
+       - porcentaje `_rinac_deposit_percentage`.
+     - Guardar en meta del pedido información suficiente para:
+       - conocer importe de depósito cobrado,
+       - importe pendiente y estado del “resto” de la reserva.
+   - Integración con hooks WooCommerce:
+     - Elegir los hooks adecuados (por ejemplo, transición de estado a `completed` o uno intermedio configurado) para lanzar el cobro del resto.
+     - Asegurar que:
+       - si un pedido se cancela, se libera la capacidad correspondiente,
+       - si un pedido se completa/caduce, se refleja el estado final de la reserva.
+   - Criterio de completitud:
+     - Al menos dos modos: 100 % al reservar, o depósito % + resto más tarde.
+     - El flujo de importes es trazable desde el backend (order meta) y consistente con la capacidad ocupada.
 
 12. **Calendario global admin + listado de reservas + Importación demo**
-   - Página admin `GlobalCalendarPage`.
-   - Listado `BookingListTable`.
-   - Botón “Importar datos de prueba” dentro de `Ajustes`.
+   - Objetivo: dar al admin una visión operativa clara de reservas y ocupación.
+   - `GlobalCalendarPage`:
+     - Vista de calendario (FullCalendar o similar) filtrable por:
+       - producto `rinac_reserva`,
+       - rango de fechas,
+       - estado de la reserva.
+     - Mostrar ocupación/resumen por día/slot según aplique.
+   - `BookingListTable`:
+     - Listado de `rinac_booking` con:
+       - filtros por producto, fecha, estado,
+       - columnas mínimas: fecha(s), producto, estado, capacidad consumida, importe (cuando aplique).
+   - Importación de datos de demo:
+     - Botón en “Ajustes” con advertencia fuerte que:
+       - borra datos de prueba anteriores (según se defina),
+       - crea un conjunto mínimo de slots, participantes, recursos y productos demo.
+   - Criterio de completitud:
+     - El admin puede ver y filtrar reservas sin salir a otras pantallas.
+     - La importación de demo deja el sistema en un estado consistente y claramente marcado como datos de prueba.
 
 13. **Concurrencia y bloqueos temporales (quote/hold)**
-   - Añadir endpoint de prevalidación (`rinac_quote_booking`) para:
-     - validar disponibilidad y reglas,
-     - calcular precio preliminar,
-     - crear bloqueo temporal de capacidad.
-   - Confirmación posterior por `rinac_create_booking_request` reutilizando el bloqueo activo.
-   - TTL recomendado de bloqueo: 10-15 minutos.
+   - Objetivo: evitar sobre-reservas en alta concurrencia, sin bloquear la experiencia de usuario.
+   - Endpoint de prevalidación `rinac_quote_booking`:
+     - Validar disponibilidad y reglas de negocio (participantes, recursos, capacidad) para una propuesta de reserva.
+     - Calcular un **precio preliminar** coherente con lo que luego se pagará en checkout.
+     - Crear un **bloqueo temporal de capacidad** (hold) con TTL configurable (p.ej. 10–15 minutos).
+   - Confirmación `rinac_create_booking_request`:
+     - Reutilizar el bloqueo activo si existe y no ha caducado.
+     - Convertirlo en reserva firme (`rinac_booking` + relación con el pedido).
+   - Gestión de expiración:
+     - Definir cómo se limpian bloqueos expirados (cron o proceso lazy al consultar).
+   - Criterio de completitud:
+     - En escenarios de concurrencia, dos usuarios no pueden “superar” la capacidad efectiva configurada.
+     - Los bloqueos caducados no consumen capacidad.
 
 14. **Frontend: booking form + FullCalendar**
-   - `Frontend\BookingForm` render del formulario.
-   - `FullCalendar` consulta disponibilidad/eventos vía endpoints AJAX.
+   - Objetivo: ofrecer un formulario de reserva único que consuma los endpoints existentes y respete toda la lógica de negocio.
+   - `Frontend\BookingForm`:
+     - Renderizar el formulario en la ficha de producto `rinac_reserva`.
+     - Integrarse con `AvailabilityManager` y demás servicios vía AJAX:
+       - selección de fechas/slots,
+       - elección de participantes,
+       - elección de recursos,
+       - recálculo de precio y capacidad en vivo.
+   - FullCalendar:
+     - Usar los endpoints (`rinac_get_availability`, `rinac_get_calendar_events`, `rinac_quote_booking`) para pintar:
+       - disponibilidad por día/slot,
+       - estados visuales (disponible, parcial, completo, no permitido).
+   - Criterio de completitud:
+     - El usuario puede completar una reserva end-to-end sin flujos manuales adicionales.
+     - Los errores de negocio (capacidad, límites, tipos no permitidos) se muestran de forma clara en la UI.
 
 15. **Templates y overrides**
-   - `templates/` contendrá vistas del plugin.
-   - `TemplateLoader` carga templates de forma segura (y se define estrategia de override si aplica).
+   - Objetivo: permitir personalización de vistas sin romper el contrato del plugin.
+   - Estructura de `templates/`:
+     - Incluir plantillas clave: formulario de reserva, vistas de calendario, fragmentos de resumen.
+   - `TemplateLoader`:
+     - Definir la estrategia de carga:
+       - primero buscar overrides en el theme/child theme,
+       - luego caer al template por defecto del plugin.
+     - Asegurar que los templates reciben datos ya validados/sanitizados (evitar lógica pesada en las vistas).
+   - Criterio de completitud:
+     - Los implementadores pueden personalizar el diseño sin tocar la lógica núcleo.
+     - La carga de templates es segura y documentada.
 
 16. **Documentación completa**
-   - `README.md` con instalación, flujo de reservas, endpoints (conceptual), seguridad y i18n.
-   - Inline docs en clases críticas (`AjaxHandler`, `AvailabilityManager`, etc.).
+   - Objetivo: que alguien ajeno al desarrollo pueda instalar, configurar y operar RINAC.
+   - `README.md`:
+     - Instalación y requisitos (versiones de WP/WooCommerce/PHP).
+     - Descripción del flujo de reservas y entidades (`rinac_slot`, `rinac_participant`, `rinac_resource`, `rinac_booking`).
+     - Resumen de endpoints AJAX y su propósito (no necesariamente contrato exhaustivo).
+     - Notas de seguridad e i18n (dominio de texto, manejo de nonces, etc.).
+   - Inline docs:
+     - En clases críticas (`AjaxHandler`, `AvailabilityManager`, `BookingManager`, `DepositManager`, etc.) describir:
+       - responsabilidades,
+       - parámetros clave,
+       - posibles códigos de error.
+   - Criterio de completitud:
+     - Cualquier desarrollador puede entender el flujo principal y puntos de extensión.
+     - El equipo de negocio puede configurar productos y leer el README para operar sin asistencia continua del desarrollador.
 
 17. **Nota importante sobre “versión anterior”**
    - El documento base menciona casos de uso (bodega, restaurante opción1/2, alquiler coches/habitaciones) “exactamente igual que en la versión anterior”.
