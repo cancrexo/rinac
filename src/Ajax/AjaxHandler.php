@@ -267,6 +267,68 @@ class AjaxHandler {
             );
         }
 
+        $wc_get_product_callable = 'wc_get_product';
+        $product = $wc_get_product_callable( $product_id );
+        if ( ! $product ) {
+            wp_send_json_error(
+                array(
+                    'message' => esc_html__( 'No se ha encontrado el producto.', 'rinac' ),
+                ),
+                400
+            );
+        }
+
+        $raw_participants = isset( $request['participants'] ) && is_array( $request['participants'] )
+            ? $request['participants']
+            : array();
+        $raw_resources = isset( $request['resources'] ) && is_array( $request['resources'] )
+            ? $request['resources']
+            : array();
+
+        $participants = array();
+        foreach ( $raw_participants as $item ) {
+            if ( ! is_array( $item ) ) {
+                continue;
+            }
+            $id = isset( $item['id'] ) ? absint( $item['id'] ) : 0;
+            $qty = isset( $item['qty'] ) ? absint( $item['qty'] ) : 0;
+            if ( $id > 0 && $qty > 0 ) {
+                $participants[] = array(
+                    'id'  => $id,
+                    'qty' => $qty,
+                );
+            }
+        }
+
+        $resources = array();
+        foreach ( $raw_resources as $item ) {
+            if ( ! is_array( $item ) ) {
+                continue;
+            }
+            $id = isset( $item['id'] ) ? absint( $item['id'] ) : 0;
+            $qty = isset( $item['qty'] ) ? absint( $item['qty'] ) : 0;
+            if ( $id > 0 && $qty > 0 ) {
+                $resources[] = array(
+                    'id'  => $id,
+                    'qty' => $qty,
+                );
+            }
+        }
+
+        $booking_manager = new \RINAC\Booking\BookingManager();
+        $validation = $booking_manager->validateBookingRequest( $product, $participants, $resources );
+
+        if ( is_wp_error( $validation ) ) {
+            wp_send_json_error(
+                array(
+                    'endpoint' => 'rinac_create_booking_request',
+                    'message'  => $validation->get_error_message(),
+                    'errors'   => $validation->get_error_data( 'rinac_booking_validation_failed' )['errors'] ?? array(),
+                ),
+                400
+            );
+        }
+
         wp_send_json_success(
             array(
                 'endpoint' => 'rinac_create_booking_request',
@@ -275,8 +337,10 @@ class AjaxHandler {
                 'payload' => array(
                     'product_id' => $product_id,
                     'slot_id' => $slot_id,
+                    'participants' => $validation['participants'],
+                    'resources'    => $validation['resources'],
                 ),
-                'message' => esc_html__( 'Endpoint base de solicitud de reserva.', 'rinac' ),
+                'message' => esc_html__( 'Solicitud de reserva validada (sin persistir).', 'rinac' ),
             )
         );
     }
