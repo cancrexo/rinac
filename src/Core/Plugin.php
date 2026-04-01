@@ -28,6 +28,10 @@ class Plugin {
         ( new I18n() )->loadTextdomain();
         ( new PostTypesRegistrar() )->registerPostTypes();
         ( new ProductTypeRegistrar() )->registerProductType();
+        if ( class_exists( 'RINAC\\Frontend\\BookingForm' ) ) {
+            $booking_form_class = 'RINAC\\Frontend\\BookingForm';
+            ( new $booking_form_class() )->register();
+        }
 
         if ( class_exists( 'RINAC\\Ajax\\AjaxHandler' ) ) {
             $ajax_handler_class = 'RINAC\\Ajax\\AjaxHandler';
@@ -72,6 +76,9 @@ class Plugin {
      * @return void
      */
     public function onFrontendAssets(): void {
-        // Placeholder del paso 1.
+        if ( class_exists( 'RINAC\\Frontend\\BookingForm' ) ) {
+            $booking_form_class = 'RINAC\\Frontend\\BookingForm';
+            ( new $booking_form_class() )->enqueueAssets();
+        }
     }
 }

@@ -267,6 +267,8 @@ class AjaxHandler {
 
         $product_id = isset( $request['product_id'] ) ? absint( $request['product_id'] ) : 0;
         $slot_id = isset( $request['slot_id'] ) ? absint( $request['slot_id'] ) : 0;
+        $start = isset( $request['start'] ) ? sanitize_text_field( wp_unslash( (string) $request['start'] ) ) : '';
+        $end = isset( $request['end'] ) ? sanitize_text_field( wp_unslash( (string) $request['end'] ) ) : '';
 
         if ( $product_id <= 0 ) {
             wp_send_json_error(
@@ -335,15 +337,20 @@ class AjaxHandler {
             array(
                 'days' => $days,
                 'nights' => $nights,
+                'start' => $start,
+                'end' => $end,
+                'slot_id' => $slot_id,
             )
         );
 
         if ( is_wp_error( $validation ) ) {
+            $validation_data = $validation->get_error_data( 'rinac_booking_validation_failed' );
             wp_send_json_error(
                 array(
                     'endpoint' => 'rinac_create_booking_request',
                     'message'  => $validation->get_error_message(),
-                    'errors'   => $validation->get_error_data( 'rinac_booking_validation_failed' )['errors'] ?? array(),
+                    'errors'   => is_array( $validation_data ) ? ( $validation_data['errors'] ?? array() ) : array(),
+                    'error_messages' => is_array( $validation_data ) ? ( $validation_data['error_messages'] ?? array() ) : array(),
                 ),
                 400
             );

@@ -429,7 +429,10 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 3. Selector frontend de slots.
 4. Tests de concurrencia y regresión.
 
-### Pendiente de implementación de Tipos de participante (estado actual)
+### Estado de Tipos de participante (actualizado)
+
+> Estado: cierre base de Paso 5 completado (admin + validaciones + pricing + AJAX + UI frontend básica + errores + tests).  
+> Pendiente para Paso 9: evolución UX avanzada e integración completa con FullCalendar/flujo final.
 
 1. **Definición operativa**
    - `rinac_participant` define cómo computa cada persona en capacidad y precio (adulto, niño, bebé, etc.).
@@ -456,6 +459,19 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 
 7. **UX y errores**
    - Mostrar mensajes claros para tipo inactivo/no permitido, límites por tipo y capacidad insuficiente.
+   - Contrato backend de errores (ya implementado en `BookingManager` + `AjaxHandler`):
+     - Estructura: `{ code, message, context }`.
+     - Respuesta AJAX incluye `errors` (detallado) y `error_messages` (compatibilidad).
+     - Códigos base de participantes/capacidad:
+       - `participant_not_allowed`
+       - `participant_invalid`
+       - `participant_inactive`
+       - `participant_below_min`
+       - `participant_above_max`
+       - `capacity_not_configured`
+       - `capacity_exceeded_total`
+       - `insufficient_capacity`
+       - `capacity_min_booking_violation`
 
 8. **Calidad**
    - Añadir tests unitarios e integración para normalización, capacidad, precio y validaciones.
@@ -475,7 +491,10 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 3. Endpoint/frontend con selector y cálculo en vivo.
 4. Tests y hardening final.
 
-### Pendiente de implementación de Recursos (estado actual)
+### Estado de Recursos (actualizado)
+
+> Estado: cierre base de Paso 5 completado (admin + validaciones + pricing + AJAX + UI frontend básica + errores + tests).  
+> Pendiente para Paso 9: evolución UX avanzada e integración completa con FullCalendar/flujo final.
 
 1. **Definición operativa**
    - `rinac_resource` es un recurso asociado al producto reservable.
@@ -502,6 +521,15 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 
 7. **UX y errores**
    - Mostrar mensajes claros para recurso no permitido/inactivo, límites y reglas incompatibles.
+   - Contrato backend de errores (ya implementado en `BookingManager` + `AjaxHandler`):
+     - Estructura: `{ code, message, context }`.
+     - Códigos base de recursos:
+       - `resource_not_allowed`
+       - `resource_invalid`
+       - `resource_inactive`
+       - `resource_below_min`
+       - `resource_above_max`
+       - `resource_mode_incompatible`
 
 8. **Calidad**
    - Añadir tests unitarios e integración para normalización, validaciones y cálculo de precio por política.

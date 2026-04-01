@@ -254,7 +254,11 @@ ANEXO: PENDIENTE DE IMPLEMENTACIÓN DE SLOTS (ESTADO ACTUAL)
   3) Selector frontend de slots.
   4) Tests de concurrencia y regresión.
 
-ANEXO: PENDIENTE DE IMPLEMENTACIÓN DE TIPOS DE PARTICIPANTE (ESTADO ACTUAL)
+ANEXO: ESTADO DE TIPOS DE PARTICIPANTE (ACTUALIZADO)
+
+- Estado actual:
+  - Cierre base de Paso 5 completado (admin, validaciones, pricing, AJAX, UI frontend básica, errores y tests).
+  - Pendiente para Paso 9: UX avanzada e integración completa con FullCalendar/flujo final.
 
 - Definición operativa de `tipo de participante`:
   - Es una entidad (`rinac_participant`) que define cómo computa una persona en capacidad y precio.
@@ -275,6 +279,13 @@ ANEXO: PENDIENTE DE IMPLEMENTACIÓN DE TIPOS DE PARTICIPANTE (ESTADO ACTUAL)
      - Pintar controles de cantidad por tipo y recalcular en vivo capacidad consumida y total estimado.
   6) UX y errores:
      - Mensajes claros para tipo no permitido/inactivo, límites por tipo y falta de capacidad.
+     - Contrato backend de errores (implementado):
+       - Estructura: `{ code, message, context }`.
+       - En AJAX: `errors` (detalle) + `error_messages` (compatibilidad).
+       - Códigos base:
+         - `participant_not_allowed`, `participant_invalid`, `participant_inactive`
+         - `participant_below_min`, `participant_above_max`
+         - `capacity_not_configured`, `capacity_exceeded_total`, `insufficient_capacity`, `capacity_min_booking_violation`
   7) Calidad:
      - Tests unitarios e integración para normalización, capacidad, precio y validaciones.
 
@@ -291,7 +302,11 @@ ANEXO: PENDIENTE DE IMPLEMENTACIÓN DE TIPOS DE PARTICIPANTE (ESTADO ACTUAL)
   3) Endpoint/frontend con selector y cálculo en vivo.
   4) Tests y hardening final.
 
-ANEXO: PENDIENTE DE IMPLEMENTACIÓN DE RECURSOS (ESTADO ACTUAL)
+ANEXO: ESTADO DE RECURSOS (ACTUALIZADO)
+
+- Estado actual:
+  - Cierre base de Paso 5 completado (admin, validaciones, pricing, AJAX, UI frontend básica, errores y tests).
+  - Pendiente para Paso 9: UX avanzada e integración completa con FullCalendar/flujo final.
 
 - Definición operativa de `recurso`:
   - Es una entidad (`rinac_resource`) asociable al producto reservable.
@@ -314,6 +329,11 @@ ANEXO: PENDIENTE DE IMPLEMENTACIÓN DE RECURSOS (ESTADO ACTUAL)
      - Pintar selector de recursos (selección simple o cantidad) con recálculo en vivo.
   6) UX y errores:
      - Mensajes claros para recurso no permitido/inactivo, límites superados y reglas incompatibles.
+     - Contrato backend de errores (implementado):
+       - Estructura: `{ code, message, context }`.
+       - Códigos base:
+         - `resource_not_allowed`, `resource_invalid`, `resource_inactive`
+         - `resource_below_min`, `resource_above_max`, `resource_mode_incompatible`
   7) Calidad:
      - Tests unitarios e integración para normalización, validaciones y cálculo por política.
 

@@ -8,7 +8,7 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 2. [x] Clase `AjaxHandler` centralizada + ejemplo de 3 endpoints (`rinac_get_availability`, `rinac_get_calendar_events`, `rinac_create_booking_request`)
 3. [x] Pestañas `woocommerce-product-data` y settings para productos `rinac_reserva`
 4. [x] Lógica de disponibilidad y cálculo de capacidad (clase `AvailabilityManager`)
-5. [ ] Gestión de recursos y participantes (`ParticipantManager`, `ResourceManager`, `BookingManager`)
+5. [x] Gestión de recursos y participantes (`ParticipantManager`, `ResourceManager`, `BookingManager`)
 6. [ ] Sistema de pago con depósito + hooks de WooCommerce (`DepositManager`)
 7. [ ] Calendario global admin + listado de reservas + botón “Importar datos de prueba”
 8. [ ] Control de concurrencia y bloqueos temporales (quote/hold antes de confirmar reserva)
@@ -33,23 +33,25 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 - [x] Añadir metadatos editables en `rinac_participant` (etiqueta pública, fracción, tipo/valor de precio, mínimos/máximos, activo, orden).
 - [x] Implementar validaciones de guardado (fracción > 0, `price_type` válido, `price_value` >= 0, coherencia min/max).
 - [x] Validar en `quote/create booking` que el tipo exista, esté activo y permitido para el producto.
-- [ ] Aplicar límites por tipo y validación de capacidad global derivada de fracciones.
+- [x] Aplicar límites por tipo y validación de capacidad global derivada de fracciones.
 - [x] Formalizar cálculo de precio por estrategia (`free`, `fixed`, extensible).
 - [x] Exponer en AJAX tipos permitidos con reglas (fracción/precio/límites/estado).
-- [ ] Implementar UI frontend de cantidades por tipo y recálculo en vivo.
-- [ ] Mostrar errores de negocio claros (no permitido, inactivo, límites, capacidad insuficiente).
-- [ ] Añadir tests unitarios/integración para normalización, capacidad, precio y validaciones.
+- [x] Formalizar contrato backend de errores de negocio (`code`, `message`, `context`) y exponerlo en `rinac_create_booking_request`.
+- [x] Implementar UI frontend de cantidades por tipo y recálculo en vivo.
+- [x] Mostrar errores de negocio claros (no permitido, inactivo, límites, capacidad insuficiente).
+- [x] Añadir tests unitarios/integración para normalización, capacidad, precio y validaciones.
 
 #### Fase Recursos
 - [x] Añadir metadatos editables en `rinac_resource` (tipo `addon/unit`, política de precio, valor, activo, orden y límites opcionales).
 - [x] Implementar validaciones de guardado (`resource_type` válido, `price_policy` válida, `price_value` >= 0 y coherencia de límites).
 - [x] Validar en `quote/create booking` que el recurso exista, esté activo y permitido para el producto.
-- [ ] Aplicar límites por recurso y reglas por modo/perfil cuando aplique.
+- [x] Aplicar límites por recurso y reglas por modo/perfil cuando aplique.
 - [x] Formalizar cálculo de precio por política (`none`, `fixed`, `per_person`, `per_day`, `per_night`).
 - [x] Exponer en AJAX recursos permitidos con reglas (tipo/política/precio/límites/estado).
-- [ ] Implementar UI frontend de selección de recursos (simple/cantidad) con recálculo en vivo.
-- [ ] Mostrar errores de negocio claros (no permitido, inactivo, límites, incompatibilidades).
-- [ ] Añadir tests unitarios/integración para normalización, validaciones y cálculo por política.
+- [x] Formalizar contrato backend de errores de negocio (`code`, `message`, `context`) y exponerlo en `rinac_create_booking_request`.
+- [x] Implementar UI frontend de selección de recursos (simple/cantidad) con recálculo en vivo.
+- [x] Mostrar errores de negocio claros (no permitido, inactivo, límites, incompatibilidades).
+- [x] Añadir tests unitarios/integración para normalización, validaciones y cálculo por política.
 
 ### Decisiones de diseño confirmadas (sin checkbox)
 - `slot` es la entidad temporal/operativa de reserva.
