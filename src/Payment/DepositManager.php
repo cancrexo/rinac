@@ -220,7 +220,7 @@ class DepositManager {
 
         $booking_id = $this->bookingRepository->create(
             array(
-                'post_status' => 'pending',
+                'post_status' => 'private',
                 'post_title' => sprintf(
                     /* translators: 1: order id, 2: product id. */
                     __( 'Reserva pedido #%1$d producto #%2$d', 'rinac' ),

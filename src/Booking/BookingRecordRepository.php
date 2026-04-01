@@ -137,7 +137,7 @@ class BookingRecordRepository {
         $booking_status = isset( $data['booking_status'] ) ? sanitize_key( (string) $data['booking_status'] ) : 'hold';
 
         return array(
-            'post_status' => isset( $data['post_status'] ) ? sanitize_key( (string) $data['post_status'] ) : 'pending',
+            'post_status' => isset( $data['post_status'] ) ? sanitize_key( (string) $data['post_status'] ) : 'private',
             'post_title' => isset( $data['post_title'] ) ? sanitize_text_field( (string) $data['post_title'] ) : __( 'Reserva RINAC', 'rinac' ),
             'product_id' => isset( $data['product_id'] ) ? (int) $data['product_id'] : 0,
             'slot_id' => isset( $data['slot_id'] ) ? (int) $data['slot_id'] : 0,

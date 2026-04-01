@@ -16,11 +16,11 @@ class PostTypesRegistrar {
         $common = array(
             'public'              => false,
             'show_ui'             => true,
-            'show_in_menu'        => false,
+            'show_in_menu'        => 'rinac_dashboard',
             'show_in_admin_bar'   => true,
             'has_archive'         => false,
             'rewrite'             => false,
-            'supports'            => array( 'title', 'editor' ),
+            'supports'            => array( 'title' ),
             'capability_type'     => 'post',
             'map_meta_cap'        => true,
         );

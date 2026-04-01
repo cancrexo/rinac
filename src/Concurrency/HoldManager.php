@@ -62,7 +62,7 @@ class HoldManager {
 
         $booking_id = $this->bookingRepository->create(
             array(
-                'post_status' => 'pending',
+                'post_status' => 'private',
                 'post_title' => sprintf(
                     /* translators: 1: product id, 2: token. */
                     __( 'Hold producto #%1$d (%2$s)', 'rinac' ),

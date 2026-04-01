@@ -49,11 +49,7 @@ class BookingStatusMapper {
             return 'draft';
         }
 
-        if ( in_array( $order_status, array( 'processing', 'completed', 'partially-refunded' ), true ) ) {
-            return 'publish';
-        }
-
-        return 'pending';
+        return 'private';
     }
 
     /**

@@ -28,6 +28,7 @@ class Plugin {
         ( new I18n() )->loadTextdomain();
         ( new PostTypesRegistrar() )->registerPostTypes();
         ( new ProductTypeRegistrar() )->registerProductType();
+        ( new MenuRegistrar() )->registerAdminPostActions();
 
         if ( class_exists( 'RINAC\\Concurrency\\HoldManager' ) ) {
             $hold_manager_class = 'RINAC\\Concurrency\\HoldManager';
@@ -78,6 +79,16 @@ class Plugin {
         if ( class_exists( 'RINAC\\Admin\\ResourceMetaBoxes' ) ) {
             $resource_meta_class = 'RINAC\\Admin\\ResourceMetaBoxes';
             ( new $resource_meta_class() )->register();
+        }
+
+        if ( class_exists( 'RINAC\\Admin\\SlotMetaBoxes' ) ) {
+            $slot_meta_class = 'RINAC\\Admin\\SlotMetaBoxes';
+            ( new $slot_meta_class() )->register();
+        }
+
+        if ( class_exists( 'RINAC\\Admin\\BookingMetaBoxes' ) ) {
+            $booking_meta_class = 'RINAC\\Admin\\BookingMetaBoxes';
+            ( new $booking_meta_class() )->register();
         }
     }
 

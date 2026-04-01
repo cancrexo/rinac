@@ -23,8 +23,6 @@ class MenuRegistrar {
         $capability = 'manage_woocommerce';
         $slug = 'rinac_dashboard';
 
-        add_action( 'admin_post_rinac_import_demo_data', array( $this, 'handleImportDemoData' ) );
-
         add_menu_page(
             __( 'RINAC', 'rinac' ),
             __( 'RINAC', 'rinac' ),
@@ -37,12 +35,58 @@ class MenuRegistrar {
 
         add_submenu_page( $slug, __( 'Dashboard', 'rinac' ), __( 'Dashboard', 'rinac' ), $capability, $slug, array( $this, 'renderDashboard' ) );
         add_submenu_page( $slug, __( 'Productos reservables', 'rinac' ), __( 'Productos reservables', 'rinac' ), $capability, 'rinac_productos_reservables', array( $this, 'renderProductosReservables' ) );
-        add_submenu_page( $slug, __( 'Slots', 'rinac' ), __( 'Slots', 'rinac' ), $capability, 'edit.php?post_type=rinac_slot' );
-        add_submenu_page( $slug, __( 'Tipos de participantes', 'rinac' ), __( 'Tipos de participantes', 'rinac' ), $capability, 'edit.php?post_type=rinac_participant' );
-        add_submenu_page( $slug, __( 'Recursos', 'rinac' ), __( 'Recursos', 'rinac' ), $capability, 'edit.php?post_type=rinac_resource' );
         add_submenu_page( $slug, __( 'Calendario global', 'rinac' ), __( 'Calendario global', 'rinac' ), $capability, 'rinac_calendario_global', array( $this, 'renderCalendarioGlobal' ) );
-        add_submenu_page( $slug, __( 'Reservas', 'rinac' ), __( 'Reservas', 'rinac' ), $capability, 'edit.php?post_type=rinac_booking' );
         add_submenu_page( $slug, __( 'Ajustes', 'rinac' ), __( 'Ajustes', 'rinac' ), $capability, 'rinac_ajustes', array( $this, 'renderAjustes' ) );
+
+        $this->reorderDashboardSubmenu( $slug );
+    }
+
+    /**
+     * Reordena el submenú principal de RINAC para mantener una UX estable.
+     *
+     * @param string $parent_slug
+     * @return void
+     */
+    private function reorderDashboardSubmenu( string $parent_slug ): void {
+        global $submenu;
+
+        if ( ! isset( $submenu[ $parent_slug ] ) || ! is_array( $submenu[ $parent_slug ] ) ) {
+            return;
+        }
+
+        $items_by_slug = array();
+        foreach ( $submenu[ $parent_slug ] as $item ) {
+            if ( ! is_array( $item ) || ! isset( $item[2] ) ) {
+                continue;
+            }
+            $items_by_slug[ (string) $item[2] ] = $item;
+        }
+
+        $desired_order = array(
+            'rinac_dashboard',
+            'rinac_productos_reservables',
+            'edit.php?post_type=rinac_slot',
+            'edit.php?post_type=rinac_participant',
+            'edit.php?post_type=rinac_resource',
+            'edit.php?post_type=rinac_booking',
+            'rinac_calendario_global',
+            'rinac_ajustes',
+        );
+
+        $ordered = array();
+        foreach ( $desired_order as $submenu_slug ) {
+            if ( isset( $items_by_slug[ $submenu_slug ] ) ) {
+                $ordered[] = $items_by_slug[ $submenu_slug ];
+                unset( $items_by_slug[ $submenu_slug ] );
+            }
+        }
+
+        // Mantener cualquier elemento extra al final para no perder extensibilidad.
+        foreach ( $items_by_slug as $remaining_item ) {
+            $ordered[] = $remaining_item;
+        }
+
+        $submenu[ $parent_slug ] = $ordered;
     }
 
     /**
@@ -51,7 +95,21 @@ class MenuRegistrar {
      * @return void
      */
     public function renderDashboard(): void {
-        echo '<div class="wrap"><h1>' . esc_html__( 'RINAC - Dashboard', 'rinac' ) . '</h1></div>';
+        $bookings_confirmed = $this->countBookingsByBusinessStatus( 'confirmed' );
+        $bookings_hold = $this->countBookingsByBusinessStatus( 'hold' );
+        $bookings_expired = $this->countBookingsByBusinessStatus( 'expired' );
+        $bookings_cancelled = $this->countBookingsByBusinessStatus( 'cancelled' );
+
+        echo '<div class="wrap">';
+        echo '<h1>' . esc_html__( 'RINAC - Dashboard', 'rinac' ) . '</h1>';
+        echo '<p>' . esc_html__( 'Resumen operativo de reservas y configuración.', 'rinac' ) . '</p>';
+        echo '<ul style="margin-top:16px;line-height:1.9;">';
+        echo '<li><strong>' . esc_html__( 'Reservas confirmadas:', 'rinac' ) . '</strong> ' . esc_html( (string) $bookings_confirmed ) . '</li>';
+        echo '<li><strong>' . esc_html__( 'Reservas en hold:', 'rinac' ) . '</strong> ' . esc_html( (string) $bookings_hold ) . '</li>';
+        echo '<li><strong>' . esc_html__( 'Reservas expiradas:', 'rinac' ) . '</strong> ' . esc_html( (string) $bookings_expired ) . '</li>';
+        echo '<li><strong>' . esc_html__( 'Reservas canceladas:', 'rinac' ) . '</strong> ' . esc_html( (string) $bookings_cancelled ) . '</li>';
+        echo '</ul>';
+        echo '</div>';
     }
 
     /**
@@ -60,7 +118,45 @@ class MenuRegistrar {
      * @return void
      */
     public function renderProductosReservables(): void {
-        echo '<div class="wrap"><h1>' . esc_html__( 'RINAC - Productos reservables', 'rinac' ) . '</h1></div>';
+        $products = get_posts(
+            array(
+                'post_type' => 'product',
+                'post_status' => array( 'publish', 'draft', 'private' ),
+                'posts_per_page' => 100,
+                'tax_query' => array(
+                    array(
+                        'taxonomy' => 'product_type',
+                        'field' => 'slug',
+                        'terms' => array( 'rinac_reserva' ),
+                    ),
+                ),
+            )
+        );
+
+        echo '<div class="wrap">';
+        echo '<h1>' . esc_html__( 'RINAC - Productos reservables', 'rinac' ) . '</h1>';
+        echo '<p>' . esc_html__( 'Listado de productos WooCommerce de tipo rinac_reserva.', 'rinac' ) . '</p>';
+        echo '<table class="widefat striped"><thead><tr>';
+        echo '<th>' . esc_html__( 'ID', 'rinac' ) . '</th>';
+        echo '<th>' . esc_html__( 'Título', 'rinac' ) . '</th>';
+        echo '<th>' . esc_html__( 'Estado', 'rinac' ) . '</th>';
+        echo '<th>' . esc_html__( 'Acción', 'rinac' ) . '</th>';
+        echo '</tr></thead><tbody>';
+        if ( empty( $products ) ) {
+            echo '<tr><td colspan="4">' . esc_html__( 'No hay productos reservables todavía.', 'rinac' ) . '</td></tr>';
+        } else {
+            foreach ( $products as $product ) {
+                $product_id = (int) $product->ID;
+                echo '<tr>';
+                echo '<td>' . esc_html( (string) $product_id ) . '</td>';
+                echo '<td>' . esc_html( get_the_title( $product_id ) ) . '</td>';
+                echo '<td>' . esc_html( (string) $product->post_status ) . '</td>';
+                echo '<td><a class="button button-small" href="' . esc_url( get_edit_post_link( $product_id ) ?: '' ) . '">' . esc_html__( 'Editar', 'rinac' ) . '</a></td>';
+                echo '</tr>';
+            }
+        }
+        echo '</tbody></table>';
+        echo '</div>';
     }
 
     /**
@@ -146,7 +242,7 @@ class MenuRegistrar {
                 echo '<td>' . esc_html( '' !== $end ? $end : '-' ) . '</td>';
                 echo '<td>' . esc_html( $slot_id > 0 ? (string) $slot_id : '-' ) . '</td>';
                 echo '<td>' . esc_html( number_format_i18n( $equivalent_qty, 2 ) ) . '</td>';
-                echo '<td>' . esc_html( '' !== $status ? $status : $booking->post_status ) . '</td>';
+                echo '<td>' . esc_html( '' !== $status ? $status : 'sin_estado' ) . '</td>';
                 echo '<td>' . esc_html( $order_id > 0 ? (string) $order_id : '-' ) . '</td>';
                 echo '</tr>';
             }
@@ -162,7 +258,28 @@ class MenuRegistrar {
      * @return void
      */
     public function renderAjustes(): void {
-        echo '<div class="wrap"><h1>' . esc_html__( 'RINAC - Ajustes', 'rinac' ) . '</h1></div>';
+        echo '<div class="wrap">';
+        echo '<h1>' . esc_html__( 'RINAC - Ajustes', 'rinac' ) . '</h1>';
+        echo '<p>' . esc_html__( 'Herramientas administrativas del plugin.', 'rinac' ) . '</p>';
+        echo '<div style="border:1px solid #d63638;background:#fff5f5;padding:12px;margin-top:16px;max-width:900px;">';
+        echo '<p style="margin-top:0;"><strong>' . esc_html__( 'Importar datos de prueba', 'rinac' ) . '</strong></p>';
+        echo '<p>' . esc_html__( 'Esta acción crea/actualiza datos demo para pruebas internas. No usar en producción sin copia de seguridad.', 'rinac' ) . '</p>';
+        echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+        wp_nonce_field( 'rinac_import_demo_data', 'rinac_import_demo_nonce' );
+        echo '<input type="hidden" name="action" value="rinac_import_demo_data" />';
+        submit_button( __( 'Importar datos de prueba', 'rinac' ), 'delete', 'submit', false );
+        echo '</form>';
+        echo '</div>';
+        echo '</div>';
+    }
+
+    /**
+     * Registra acciones admin_post necesarias fuera de admin_menu.
+     *
+     * @return void
+     */
+    public function registerAdminPostActions(): void {
+        add_action( 'admin_post_rinac_import_demo_data', array( $this, 'handleImportDemoData' ) );
     }
 
     /**
@@ -319,5 +436,36 @@ class MenuRegistrar {
         update_post_meta( $slot_id, '_rinac_slot_is_active', 1 );
 
         return $slot_id;
+    }
+
+    /**
+     * Cuenta reservas por estado de negocio (_rinac_booking_status).
+     *
+     * @param string $booking_status
+     * @return int
+     */
+    private function countBookingsByBusinessStatus( string $booking_status ): int {
+        if ( '' === $booking_status ) {
+            return 0;
+        }
+
+        $query = new \WP_Query(
+            array(
+                'post_type' => 'rinac_booking',
+                'post_status' => array( 'publish', 'pending', 'private', 'draft' ),
+                'posts_per_page' => 1,
+                'fields' => 'ids',
+                'no_found_rows' => false,
+                'meta_query' => array(
+                    array(
+                        'key' => '_rinac_booking_status',
+                        'value' => sanitize_key( $booking_status ),
+                        'compare' => '=',
+                    ),
+                ),
+            )
+        );
+
+        return (int) $query->found_posts;
     }
 }
