@@ -10,6 +10,17 @@ DEFINICIÓN OFICIAL DE SLOT (REFERENCIA ÚNICA):
 - `turno` se entiende como alias/sinónimo de `slot`.
 - Todas las reglas de disponibilidad/capacidad deben modelarse en torno a `slot`.
 
+GATE OBLIGATORIO (BACKEND COMPLETO ANTES DE FRONTEND):
+- No iniciar Paso 9 (frontend + FullCalendar) hasta cumplir:
+  1) Contrato canónico de `rinac_booking` (meta keys obligatorias y escritura consistente en todos los flujos).
+  2) Concurrencia robusta: `hold_token` idempotente + anti-carreras + limpieza cron/lazy de holds expirados.
+  3) Integridad de capacidad global/slot en todos los `booking_mode`, incluyendo invalidación de caché en eventos críticos.
+  4) Matriz cerrada de estados `pedido -> reserva` con reglas de liberación de capacidad.
+  5) Contrato API backend estable (`availability`, `quote`, `create`) con errores estructurados.
+  6) Tests backend obligatorios:
+     - unit: `HoldManager`, `DepositManager`, `AvailabilityManager`,
+     - integración: `quote -> hold -> confirm -> order status -> capacity`.
+
 REQUISITOS TÉCNICOS OBLIGATORIOS:
 - Usa Composer con PSR-4 autoloading (namespace RINAC\...)
 - Desde el inicio del proyecto ejecutar:

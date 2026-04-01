@@ -2,10 +2,17 @@
 
 namespace RINAC\Core;
 
+use RINAC\Booking\BookingRecordRepository;
+
 /**
  * Menú de administración de RINAC.
  */
 class MenuRegistrar {
+    private BookingRecordRepository $bookingRepository;
+
+    public function __construct() {
+        $this->bookingRepository = new BookingRecordRepository();
+    }
 
     /**
      * Registra menú y submenús base.
@@ -186,28 +193,24 @@ class MenuRegistrar {
             for ( $i = 0; $i < 3; $i++ ) {
                 $start = gmdate( 'Y-m-d', strtotime( '+' . ( $i + 1 ) . ' day' ) );
                 $end = $start;
-                $booking_id = wp_insert_post(
+                $booking_id = $this->bookingRepository->create(
                     array(
-                        'post_type' => 'rinac_booking',
                         'post_status' => 'publish',
                         'post_title' => sprintf(
                             /* translators: %d índice demo. */
                             __( 'Reserva demo %d', 'rinac' ),
                             $i + 1
                         ),
-                    ),
-                    true
+                        'product_id' => $product_id,
+                        'slot_id' => $slot_id,
+                        'start' => $start,
+                        'end' => $end,
+                        'equivalent_qty' => 1.0 + ( 0.5 * $i ),
+                        'booking_status' => 'confirmed',
+                    )
                 );
 
                 if ( ! is_wp_error( $booking_id ) && is_numeric( $booking_id ) ) {
-                    $booking_id = (int) $booking_id;
-                    update_post_meta( $booking_id, '_rinac_booking_product_id', $product_id );
-                    update_post_meta( $booking_id, '_rinac_booking_slot_id', $slot_id );
-                    update_post_meta( $booking_id, '_rinac_booking_start', $start );
-                    update_post_meta( $booking_id, '_rinac_booking_end', $end );
-                    update_post_meta( $booking_id, '_rinac_booking_equivalent_qty', 1.0 + ( 0.5 * $i ) );
-                    update_post_meta( $booking_id, '_rinac_booking_status', 'confirmed' );
-                    update_post_meta( $booking_id, '_rinac_booking_order_id', 0 );
                     $created++;
                 }
             }

@@ -2,10 +2,20 @@
 
 namespace RINAC\Payment;
 
+use RINAC\Booking\BookingRecordRepository;
+use RINAC\Booking\BookingStatusMapper;
+
 /**
  * Gestiona el cobro de depósito para productos `rinac_reserva`.
  */
 class DepositManager {
+    private BookingRecordRepository $bookingRepository;
+    private BookingStatusMapper $statusMapper;
+
+    public function __construct() {
+        $this->bookingRepository = new BookingRecordRepository();
+        $this->statusMapper = new BookingStatusMapper();
+    }
 
     /**
      * Registra hooks de WooCommerce para depósito.
@@ -203,14 +213,13 @@ class DepositManager {
         $start = isset( $values['rinac_start'] ) ? sanitize_text_field( (string) $values['rinac_start'] ) : '';
         $end = isset( $values['rinac_end'] ) ? sanitize_text_field( (string) $values['rinac_end'] ) : '';
 
-        $existing_booking_id = $this->findBookingByOrderItemId( $order_item_id );
+        $existing_booking_id = $this->bookingRepository->findByOrderItemId( $order_item_id );
         if ( $existing_booking_id > 0 ) {
             return;
         }
 
-        $booking_id = wp_insert_post(
+        $booking_id = $this->bookingRepository->create(
             array(
-                'post_type' => 'rinac_booking',
                 'post_status' => 'pending',
                 'post_title' => sprintf(
                     /* translators: 1: order id, 2: product id. */
@@ -218,9 +227,15 @@ class DepositManager {
                     $order_id,
                     $product_id
                 ),
-                'post_content' => '',
+                'product_id' => $product_id,
+                'slot_id' => $slot_id,
+                'order_id' => $order_id,
+                'order_item_id' => $order_item_id,
+                'start' => $start,
+                'end' => $end,
+                'equivalent_qty' => max( 0.0, $equivalent_qty ),
+                'booking_status' => 'hold',
             ),
-            true
         );
 
         if ( is_wp_error( $booking_id ) || ! is_numeric( $booking_id ) ) {
@@ -228,14 +243,6 @@ class DepositManager {
         }
 
         $booking_id = (int) $booking_id;
-        update_post_meta( $booking_id, '_rinac_booking_order_id', $order_id );
-        update_post_meta( $booking_id, '_rinac_booking_order_item_id', $order_item_id );
-        update_post_meta( $booking_id, '_rinac_booking_product_id', $product_id );
-        update_post_meta( $booking_id, '_rinac_booking_slot_id', $slot_id );
-        update_post_meta( $booking_id, '_rinac_booking_start', $start );
-        update_post_meta( $booking_id, '_rinac_booking_end', $end );
-        update_post_meta( $booking_id, '_rinac_booking_equivalent_qty', max( 0.0, $equivalent_qty ) );
-        update_post_meta( $booking_id, '_rinac_booking_status', 'hold' );
 
         // Relación inversa útil para depuración/navegación.
         if ( method_exists( $item, 'add_meta_data' ) ) {
@@ -257,58 +264,16 @@ class DepositManager {
             return;
         }
 
-        $status_map = $this->getOrderToBookingStatusMap();
-        $booking_status = isset( $status_map[ $new_status ] ) ? $status_map[ $new_status ] : 'hold';
-        $release_capacity = in_array( $new_status, array( 'cancelled', 'failed', 'refunded' ), true );
-
-        $query = new \WP_Query(
-            array(
-                'post_type' => 'rinac_booking',
-                'post_status' => array( 'publish', 'pending', 'private', 'draft' ),
-                'posts_per_page' => -1,
-                'fields' => 'ids',
-                'no_found_rows' => true,
-                'meta_query' => array(
-                    array(
-                        'key' => '_rinac_booking_order_id',
-                        'value' => $order_id,
-                        'compare' => '=',
-                        'type' => 'NUMERIC',
-                    ),
-                ),
-            )
-        );
-
-        if ( empty( $query->posts ) ) {
+        $booking_status = $this->statusMapper->mapOrderStatusToBookingStatus( $new_status );
+        $post_status = $this->statusMapper->mapOrderStatusToPostStatus( $new_status );
+        $booking_ids = $this->bookingRepository->findByOrderId( $order_id );
+        if ( empty( $booking_ids ) ) {
             return;
         }
 
-        foreach ( $query->posts as $booking_id ) {
+        foreach ( $booking_ids as $booking_id ) {
             $booking_id = (int) $booking_id;
-            update_post_meta( $booking_id, '_rinac_booking_status', $booking_status );
-
-            if ( $release_capacity ) {
-                wp_update_post(
-                    array(
-                        'ID' => $booking_id,
-                        'post_status' => 'draft',
-                    )
-                );
-            } elseif ( in_array( $new_status, array( 'processing', 'completed' ), true ) ) {
-                wp_update_post(
-                    array(
-                        'ID' => $booking_id,
-                        'post_status' => 'publish',
-                    )
-                );
-            } else {
-                wp_update_post(
-                    array(
-                        'ID' => $booking_id,
-                        'post_status' => 'pending',
-                    )
-                );
-            }
+            $this->bookingRepository->setStatuses( $booking_id, $booking_status, $post_status );
         }
 
         $this->invalidateAvailabilityTransients();
@@ -334,56 +299,6 @@ class DepositManager {
             return (string) $wc_price_callable( $value );
         }
         return (string) $this->wcFormatDecimal( $value, 2 );
-    }
-
-    /**
-     * Busca reserva existente por ID de línea de pedido.
-     */
-    private function findBookingByOrderItemId( int $order_item_id ): int {
-        if ( $order_item_id <= 0 ) {
-            return 0;
-        }
-
-        $query = new \WP_Query(
-            array(
-                'post_type' => 'rinac_booking',
-                'post_status' => array( 'publish', 'pending', 'private', 'draft' ),
-                'posts_per_page' => 1,
-                'fields' => 'ids',
-                'no_found_rows' => true,
-                'meta_query' => array(
-                    array(
-                        'key' => '_rinac_booking_order_item_id',
-                        'value' => $order_item_id,
-                        'compare' => '=',
-                        'type' => 'NUMERIC',
-                    ),
-                ),
-            )
-        );
-
-        if ( empty( $query->posts ) ) {
-            return 0;
-        }
-
-        return (int) $query->posts[0];
-    }
-
-    /**
-     * Mapeo base de estado de pedido a estado de reserva.
-     *
-     * @return array<string,string>
-     */
-    private function getOrderToBookingStatusMap(): array {
-        return array(
-            'pending' => 'hold',
-            'on-hold' => 'hold',
-            'processing' => 'confirmed',
-            'completed' => 'completed',
-            'cancelled' => 'cancelled',
-            'failed' => 'cancelled',
-            'refunded' => 'cancelled',
-        );
     }
 
     /**

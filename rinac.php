@@ -46,6 +46,9 @@ function rinac_activate(): void {
  * @return void
  */
 function rinac_deactivate(): void {
+    if ( class_exists( 'RINAC\\Concurrency\\HoldManager' ) ) {
+        RINAC\Concurrency\HoldManager::clearCleanupSchedule();
+    }
     flush_rewrite_rules();
 }
 

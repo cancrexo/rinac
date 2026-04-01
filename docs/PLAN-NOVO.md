@@ -11,6 +11,37 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 - `turno` se entiende como alias/sinónimo de `slot`.
 - La disponibilidad y la capacidad se calculan sobre `slot`.
 
+### Gate obligatorio: backend completo antes de frontend
+
+Este gate define cuándo se considera **backend completo**.  
+Hasta que no se cumpla, no se inicia desarrollo del Paso 9 (frontend + FullCalendar).
+
+1. **Contrato canónico de reserva (`rinac_booking`)**
+   - Definir meta keys obligatorias y opcionales.
+   - Garantizar escritura consistente en todos los puntos: quote/hold, confirmación, hooks de pedido, import demo y procesos admin.
+
+2. **Concurrencia e idempotencia**
+   - Confirmación de `hold_token` estrictamente idempotente.
+   - Prevención explícita de doble confirmación y doble consumo de capacidad.
+   - Limpieza de holds expirados por estrategia dual: cron + lazy cleanup.
+
+3. **Integridad de capacidad**
+   - Regla única para capacidad global/slot en todos los `booking_mode`.
+   - Exclusión correcta de reservas canceladas/expiradas en ocupación.
+   - Invalidación de caché de disponibilidad en todos los eventos críticos.
+
+4. **Matriz de estados pedido -> reserva**
+   - Tabla cerrada de transiciones incluyendo: `pending`, `on-hold`, `processing`, `completed`, `cancelled`, `failed`, `refunded` (parcial y total).
+   - Reglas de liberación de capacidad y efectos colaterales por transición.
+
+5. **Contrato backend de API estable**
+   - Endpoints `rinac_get_availability`, `rinac_quote_booking`, `rinac_create_booking_request`.
+   - Payloads y errores versionables/estables (`code`, `message`, `context`) para consumo frontend.
+
+6. **Cobertura de tests backend mínima obligatoria**
+   - Unitarios: `HoldManager`, `DepositManager`, `AvailabilityManager`.
+   - Integración: flujo completo `quote -> hold -> confirm -> cambio estado pedido -> verificación de capacidad`.
+
 ### Paso 1 del desarrollo
 
 1. **Base del plugin / bootstrap (ficheros raíz)**

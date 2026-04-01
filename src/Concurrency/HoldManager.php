@@ -2,12 +2,15 @@
 
 namespace RINAC\Concurrency;
 
+use RINAC\Booking\BookingRecordRepository;
 use WP_Error;
 
 /**
  * Gestiona bloqueos temporales (quote/hold) para evitar sobre-reservas.
  */
 class HoldManager {
+    private const CRON_HOOK = 'rinac_cleanup_expired_holds';
+    private const CONFIRM_LOCK_META = '_rinac_hold_confirm_lock';
 
     /**
      * TTL por defecto del bloqueo (segundos).
@@ -15,6 +18,23 @@ class HoldManager {
      * @var int
      */
     private int $defaultTtl = 15 * MINUTE_IN_SECONDS;
+    private BookingRecordRepository $bookingRepository;
+
+    public function __construct() {
+        $this->bookingRepository = new BookingRecordRepository();
+    }
+
+    /**
+     * Registra limpieza lazy + cron.
+     *
+     * @return void
+     */
+    public function register(): void {
+        add_action( self::CRON_HOOK, array( $this, 'cleanupExpiredHolds' ) );
+        add_filter( 'cron_schedules', array( $this, 'addCronSchedules' ) );
+        add_action( 'init', array( $this, 'ensureCleanupSchedule' ) );
+        add_action( 'init', array( $this, 'cleanupExpiredHolds' ) );
+    }
 
     /**
      * Crea un hold temporal en `rinac_booking`.
@@ -40,9 +60,8 @@ class HoldManager {
         $expires_at = time() + $ttl;
         $token = wp_generate_uuid4();
 
-        $booking_id = wp_insert_post(
+        $booking_id = $this->bookingRepository->create(
             array(
-                'post_type' => 'rinac_booking',
                 'post_status' => 'pending',
                 'post_title' => sprintf(
                     /* translators: 1: product id, 2: token. */
@@ -50,8 +69,15 @@ class HoldManager {
                     $product_id,
                     substr( $token, 0, 8 )
                 ),
-            ),
-            true
+                'product_id' => $product_id,
+                'slot_id' => $slot_id,
+                'start' => $start,
+                'end' => $end,
+                'equivalent_qty' => max( 0.0, $equivalent_qty ),
+                'booking_status' => 'hold',
+                'hold_token' => $token,
+                'hold_expires_at' => $expires_at,
+            )
         );
 
         if ( is_wp_error( $booking_id ) || ! is_numeric( $booking_id ) ) {
@@ -60,16 +86,7 @@ class HoldManager {
                 esc_html__( 'No se pudo crear el bloqueo temporal.', 'rinac' )
             );
         }
-
         $booking_id = (int) $booking_id;
-        update_post_meta( $booking_id, '_rinac_booking_product_id', $product_id );
-        update_post_meta( $booking_id, '_rinac_booking_slot_id', $slot_id );
-        update_post_meta( $booking_id, '_rinac_booking_start', $start );
-        update_post_meta( $booking_id, '_rinac_booking_end', $end );
-        update_post_meta( $booking_id, '_rinac_booking_equivalent_qty', max( 0.0, $equivalent_qty ) );
-        update_post_meta( $booking_id, '_rinac_booking_status', 'hold' );
-        update_post_meta( $booking_id, '_rinac_hold_token', $token );
-        update_post_meta( $booking_id, '_rinac_hold_expires_at', $expires_at );
 
         $this->invalidateAvailabilityTransients();
 
@@ -91,19 +108,40 @@ class HoldManager {
         $this->cleanupExpiredHolds();
         $hold = $this->getHoldByToken( $token );
         if ( is_wp_error( $hold ) ) {
+            if ( 'rinac_hold_not_active' === $hold->get_error_code() ) {
+                $booking_id = $this->bookingRepository->findByHoldToken( $token );
+                if ( $booking_id > 0 ) {
+                    $status = (string) get_post_meta( $booking_id, '_rinac_booking_status', true );
+                    if ( in_array( $status, array( 'confirmed', 'completed' ), true ) ) {
+                        return array(
+                            'booking_id' => $booking_id,
+                            'hold_token' => $token,
+                            'status' => $status,
+                            'idempotent' => true,
+                        );
+                    }
+                }
+            }
             return $hold;
         }
 
         $booking_id = (int) $hold['booking_id'];
-        update_post_meta( $booking_id, '_rinac_booking_status', 'confirmed' );
-        delete_post_meta( $booking_id, '_rinac_hold_expires_at' );
+        if ( ! add_post_meta( $booking_id, self::CONFIRM_LOCK_META, time(), true ) ) {
+            return new WP_Error(
+                'rinac_hold_confirm_race',
+                esc_html__( 'El hold está siendo confirmado por otra solicitud. Reintenta.', 'rinac' )
+            );
+        }
 
-        wp_update_post(
-            array(
-                'ID' => $booking_id,
-                'post_status' => 'private',
-            )
-        );
+        $current_status = (string) get_post_meta( $booking_id, '_rinac_booking_status', true );
+        if ( 'hold' !== $current_status ) {
+            delete_post_meta( $booking_id, self::CONFIRM_LOCK_META );
+            return new WP_Error( 'rinac_hold_not_active', esc_html__( 'El bloqueo ya no está en estado hold.', 'rinac' ) );
+        }
+
+        delete_post_meta( $booking_id, '_rinac_hold_expires_at' );
+        $this->bookingRepository->setStatuses( $booking_id, 'confirmed', 'private' );
+        delete_post_meta( $booking_id, self::CONFIRM_LOCK_META );
 
         $this->invalidateAvailabilityTransients();
 
@@ -125,28 +163,10 @@ class HoldManager {
             return new WP_Error( 'rinac_hold_token_missing', esc_html__( 'Falta hold_token.', 'rinac' ) );
         }
 
-        $query = new \WP_Query(
-            array(
-                'post_type' => 'rinac_booking',
-                'post_status' => array( 'pending', 'private', 'publish' ),
-                'posts_per_page' => 1,
-                'fields' => 'ids',
-                'no_found_rows' => true,
-                'meta_query' => array(
-                    array(
-                        'key' => '_rinac_hold_token',
-                        'value' => $token,
-                        'compare' => '=',
-                    ),
-                ),
-            )
-        );
-
-        if ( empty( $query->posts ) ) {
+        $booking_id = $this->bookingRepository->findByHoldToken( $token );
+        if ( $booking_id <= 0 ) {
             return new WP_Error( 'rinac_hold_not_found', esc_html__( 'No existe bloqueo activo para este token.', 'rinac' ) );
         }
-
-        $booking_id = (int) $query->posts[0];
         $booking_status = (string) get_post_meta( $booking_id, '_rinac_booking_status', true );
         if ( 'hold' !== $booking_status ) {
             return new WP_Error( 'rinac_hold_not_active', esc_html__( 'El bloqueo ya no está en estado hold.', 'rinac' ) );
@@ -154,8 +174,7 @@ class HoldManager {
 
         $expires_at = (int) get_post_meta( $booking_id, '_rinac_hold_expires_at', true );
         if ( $expires_at > 0 && $expires_at < time() ) {
-            wp_update_post( array( 'ID' => $booking_id, 'post_status' => 'draft' ) );
-            update_post_meta( $booking_id, '_rinac_booking_status', 'expired' );
+            $this->bookingRepository->setStatuses( $booking_id, 'expired', 'draft' );
             $this->invalidateAvailabilityTransients();
             return new WP_Error( 'rinac_hold_expired', esc_html__( 'El bloqueo temporal ha expirado.', 'rinac' ) );
         }
@@ -203,8 +222,7 @@ class HoldManager {
             $booking_id = (int) $booking_id;
             $expires_at = (int) get_post_meta( $booking_id, '_rinac_hold_expires_at', true );
             if ( $expires_at > 0 && $expires_at < time() ) {
-                wp_update_post( array( 'ID' => $booking_id, 'post_status' => 'draft' ) );
-                update_post_meta( $booking_id, '_rinac_booking_status', 'expired' );
+                $this->bookingRepository->setStatuses( $booking_id, 'expired', 'draft' );
                 $updated = true;
             }
         }
@@ -212,6 +230,44 @@ class HoldManager {
         if ( $updated ) {
             $this->invalidateAvailabilityTransients();
         }
+    }
+
+    /**
+     * Programa cron de limpieza si no existe.
+     *
+     * @return void
+     */
+    public function ensureCleanupSchedule(): void {
+        if ( wp_next_scheduled( self::CRON_HOOK ) ) {
+            return;
+        }
+
+        wp_schedule_event( time() + 60, 'five_minutes', self::CRON_HOOK );
+    }
+
+    /**
+     * Permite limpiar el cron al desactivar plugin.
+     *
+     * @return void
+     */
+    public static function clearCleanupSchedule(): void {
+        wp_clear_scheduled_hook( self::CRON_HOOK );
+    }
+
+    /**
+     * Añade intervalos cron necesarios.
+     *
+     * @param array<string,array<string,mixed>> $schedules
+     * @return array<string,array<string,mixed>>
+     */
+    public function addCronSchedules( array $schedules ): array {
+        if ( ! isset( $schedules['five_minutes'] ) ) {
+            $schedules['five_minutes'] = array(
+                'interval' => 5 * MINUTE_IN_SECONDS,
+                'display' => __( 'Every five minutes', 'rinac' ),
+            );
+        }
+        return $schedules;
     }
 
     /**

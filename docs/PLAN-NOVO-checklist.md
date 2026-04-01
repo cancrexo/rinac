@@ -18,6 +18,21 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 
 ### Tareas activas por fase (detalle operativo)
 
+#### Gate backend completo (obligatorio antes de frontend)
+- [x] Cerrar contrato canónico de `rinac_booking` (meta keys obligatorias y normalización en todos los flujos: quote/hold/create/order/admin import).
+- [x] Endurecer idempotencia y anti-carreras en confirmación de `hold_token` (sin doble consumo de capacidad).
+- [ ] Completar matriz de transición de estados `pedido -> reserva` (incluyendo cancelaciones, fallos, reembolsos parciales/totales y reintentos).
+- [ ] Garantizar coherencia de capacidad global/slot en todos los `booking_mode` soportados.
+- [x] Formalizar e implementar política de limpieza de holds (cron + lazy cleanup) con TTL configurable.
+- [x] Asegurar invalidación de caché de disponibilidad ante todos los eventos críticos (confirmación/cancelación/expiración/edición relevante).
+- [ ] Definir contrato final de endpoints backend (`availability`, `quote`, `create`) con payloads y errores estables.
+- [ ] Añadir tests backend mínimos obligatorios:
+  - [x] unit: `HoldManager` (create/get/confirm/expire/idempotencia),
+  - [x] unit: `DepositManager` (full/deposit y persistencia),
+  - [x] unit: `AvailabilityManager` (ocupación con holds activos/expirados/cancelados),
+  - [x] integración: flujo `quote -> hold -> confirm -> order status -> capacity`.
+- [ ] No iniciar desarrollo frontend de Paso 9 hasta completar todos los puntos anteriores.
+
 #### Fase Slots
 - [ ] Añadir metadatos editables en `rinac_slot` (inicio, fin/etiqueta, capacidad máxima, capacidad mínima opcional, prioridad y estado activo).
 - [ ] Implementar validaciones de slot (coherencia de datos, solapes cuando aplique y compatibilidad con `rinac_booking_mode`).

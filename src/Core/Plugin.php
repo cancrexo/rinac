@@ -29,6 +29,11 @@ class Plugin {
         ( new PostTypesRegistrar() )->registerPostTypes();
         ( new ProductTypeRegistrar() )->registerProductType();
 
+        if ( class_exists( 'RINAC\\Concurrency\\HoldManager' ) ) {
+            $hold_manager_class = 'RINAC\\Concurrency\\HoldManager';
+            ( new $hold_manager_class() )->register();
+        }
+
         if ( class_exists( 'RINAC\\Payment\\DepositManager' ) ) {
             $deposit_manager_class = 'RINAC\\Payment\\DepositManager';
             ( new $deposit_manager_class() )->register();
