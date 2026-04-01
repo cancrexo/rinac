@@ -42,6 +42,10 @@ Hasta que no se cumpla, no se inicia desarrollo del Paso 9 (frontend + FullCalen
    - Unitarios: `HoldManager`, `DepositManager`, `AvailabilityManager`.
    - Integración: flujo completo `quote -> hold -> confirm -> cambio estado pedido -> verificación de capacidad`.
 
+Estado del gate:
+- Gate backend completo: **cumplido**.
+- Se habilita paso posterior de frontend (Paso 9) solo a partir de este punto.
+
 ### Paso 1 del desarrollo
 
 1. **Base del plugin / bootstrap (ficheros raíz)**

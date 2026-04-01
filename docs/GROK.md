@@ -21,6 +21,10 @@ GATE OBLIGATORIO (BACKEND COMPLETO ANTES DE FRONTEND):
      - unit: `HoldManager`, `DepositManager`, `AvailabilityManager`,
      - integración: `quote -> hold -> confirm -> order status -> capacity`.
 
+Estado del gate:
+- Backend completo: **cumplido**.
+- Se puede pasar al Paso 9 (frontend) tras este cierre.
+
 REQUISITOS TÉCNICOS OBLIGATORIOS:
 - Usa Composer con PSR-4 autoloading (namespace RINAC\...)
 - Desde el inicio del proyecto ejecutar:

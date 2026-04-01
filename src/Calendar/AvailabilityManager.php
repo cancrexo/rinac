@@ -272,6 +272,9 @@ class AvailabilityManager {
             if ( ! $this->shouldCountBookingForOccupancy( (int) $booking_id ) ) {
                 continue;
             }
+            if ( ! $this->bookingOverlapsRange( (int) $booking_id, $start, $end ) ) {
+                continue;
+            }
             $qty = get_post_meta( $booking_id, '_rinac_booking_equivalent_qty', true );
             if ( is_numeric( $qty ) ) {
                 $equivalent_qty += (float) $qty;
@@ -315,6 +318,9 @@ class AvailabilityManager {
 
         foreach ( $query->posts as $booking_id ) {
             if ( ! $this->shouldCountBookingForOccupancy( (int) $booking_id ) ) {
+                continue;
+            }
+            if ( ! $this->bookingOverlapsRange( (int) $booking_id, $start, $end ) ) {
                 continue;
             }
             $qty = get_post_meta( $booking_id, '_rinac_booking_equivalent_qty', true );
@@ -396,6 +402,28 @@ class AvailabilityManager {
         }
 
         return true;
+    }
+
+    /**
+     * Comprueba solape de rango de reserva.
+     *
+     * @param int $booking_id
+     * @param string $query_start
+     * @param string $query_end
+     * @return bool
+     */
+    private function bookingOverlapsRange( int $booking_id, string $query_start, string $query_end ): bool {
+        $booking_start = (string) get_post_meta( $booking_id, '_rinac_booking_start', true );
+        $booking_end = (string) get_post_meta( $booking_id, '_rinac_booking_end', true );
+
+        if ( '' === $query_start || '' === $query_end ) {
+            return true;
+        }
+        if ( '' === $booking_start || '' === $booking_end ) {
+            return true;
+        }
+
+        return $booking_start <= $query_end && $booking_end >= $query_start;
     }
 }
 

@@ -264,8 +264,9 @@ class DepositManager {
             return;
         }
 
-        $booking_status = $this->statusMapper->mapOrderStatusToBookingStatus( $new_status );
-        $post_status = $this->statusMapper->mapOrderStatusToPostStatus( $new_status );
+        $transition = $this->statusMapper->resolveTransition( $new_status, $order );
+        $booking_status = $transition['booking_status'];
+        $post_status = $transition['post_status'];
         $booking_ids = $this->bookingRepository->findByOrderId( $order_id );
         if ( empty( $booking_ids ) ) {
             return;

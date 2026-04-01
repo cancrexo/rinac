@@ -6,6 +6,7 @@ namespace RINAC\Ajax;
  * Handler centralizado de endpoints AJAX.
  */
 class AjaxHandler {
+    private const API_VERSION = '1.0.0';
 
     /**
      * Acción de nonce.
@@ -206,12 +207,7 @@ class AjaxHandler {
         $slot_id = isset( $request['slot_id'] ) ? absint( $request['slot_id'] ) : 0;
 
         if ( $product_id <= 0 ) {
-            wp_send_json_error(
-                array(
-                    'message' => esc_html__( 'Producto inválido.', 'rinac' ),
-                ),
-                400
-            );
+            $this->sendApiError( 'rinac_get_availability', 'invalid_product', esc_html__( 'Producto inválido.', 'rinac' ), 400 );
         }
 
         $availability_manager = new \RINAC\Calendar\AvailabilityManager();
@@ -224,9 +220,9 @@ class AjaxHandler {
 
         $message = $availability['available'] ? esc_html__( 'Disponibilidad calculada.', 'rinac' ) : esc_html__( 'No hay disponibilidad para la consulta.', 'rinac' );
 
-        wp_send_json_success(
+        $this->sendApiSuccess(
+            'rinac_get_availability',
             array(
-                'endpoint' => 'rinac_get_availability',
                 'product_id' => $product_id,
                 'query' => array(
                     'start' => $start,
@@ -234,8 +230,8 @@ class AjaxHandler {
                     'slot_id' => $slot_id > 0 ? $slot_id : null,
                 ),
                 'data' => $availability,
-                'message' => $message,
-            )
+            ),
+            $message
         );
     }
 
@@ -250,13 +246,13 @@ class AjaxHandler {
 
         $product_id = isset( $request['product_id'] ) ? absint( $request['product_id'] ) : 0;
 
-        wp_send_json_success(
+        $this->sendApiSuccess(
+            'rinac_get_calendar_events',
             array(
-                'endpoint' => 'rinac_get_calendar_events',
                 'product_id' => $product_id,
                 'events' => array(),
-                'message' => esc_html__( 'Endpoint base de eventos de calendario.', 'rinac' ),
-            )
+            ),
+            esc_html__( 'Endpoint base de eventos de calendario.', 'rinac' )
         );
     }
 
@@ -278,14 +274,15 @@ class AjaxHandler {
 
         if ( is_wp_error( $validation ) ) {
             $validation_data = $validation->get_error_data( 'rinac_booking_validation_failed' );
-            wp_send_json_error(
+            $this->sendApiError(
+                'rinac_create_booking_request',
+                'validation_failed',
+                $validation->get_error_message(),
+                400,
                 array(
-                    'endpoint' => 'rinac_create_booking_request',
-                    'message'  => $validation->get_error_message(),
-                    'errors'   => is_array( $validation_data ) ? ( $validation_data['errors'] ?? array() ) : array(),
+                    'errors' => is_array( $validation_data ) ? ( $validation_data['errors'] ?? array() ) : array(),
                     'error_messages' => is_array( $validation_data ) ? ( $validation_data['error_messages'] ?? array() ) : array(),
-                ),
-                400
+                )
             );
         }
 
@@ -295,33 +292,24 @@ class AjaxHandler {
             $hold_manager = new \RINAC\Concurrency\HoldManager();
             $confirmed_hold = $hold_manager->confirmHold( $hold_token );
             if ( is_wp_error( $confirmed_hold ) ) {
-                wp_send_json_error(
-                    array(
-                        'endpoint' => 'rinac_create_booking_request',
-                        'message' => $confirmed_hold->get_error_message(),
-                    ),
-                    409
-                );
+                $this->sendApiError( 'rinac_create_booking_request', 'hold_confirmation_failed', $confirmed_hold->get_error_message(), 409 );
             }
             $hold_response = $confirmed_hold;
         }
 
-        wp_send_json_success(
+        $this->sendApiSuccess(
+            'rinac_create_booking_request',
             array(
-                'endpoint' => 'rinac_create_booking_request',
-                'status' => 'ok',
                 'request_id' => wp_generate_uuid4(),
-                'payload' => array(
-                    'product_id' => $product_id,
-                    'slot_id' => $slot_id,
-                    'participants' => $validation['participants'],
-                    'resources'    => $validation['resources'],
-                    'pricing'      => $validation['pricing'],
-                    'capacity'     => $validation['capacity'],
-                    'hold'         => $hold_response,
-                ),
-                'message' => esc_html__( 'Solicitud de reserva validada (sin persistir).', 'rinac' ),
-            )
+                'product_id' => $product_id,
+                'slot_id' => $slot_id,
+                'participants' => $validation['participants'],
+                'resources'    => $validation['resources'],
+                'pricing'      => $validation['pricing'],
+                'capacity'     => $validation['capacity'],
+                'hold'         => $hold_response,
+            ),
+            esc_html__( 'Solicitud de reserva validada (sin persistir).', 'rinac' )
         );
     }
 
@@ -338,25 +326,20 @@ class AjaxHandler {
         $validation = $parsed['validation'];
         if ( is_wp_error( $validation ) ) {
             $validation_data = $validation->get_error_data( 'rinac_booking_validation_failed' );
-            wp_send_json_error(
+            $this->sendApiError(
+                'rinac_quote_booking',
+                'validation_failed',
+                $validation->get_error_message(),
+                400,
                 array(
-                    'endpoint' => 'rinac_quote_booking',
-                    'message'  => $validation->get_error_message(),
-                    'errors'   => is_array( $validation_data ) ? ( $validation_data['errors'] ?? array() ) : array(),
+                    'errors' => is_array( $validation_data ) ? ( $validation_data['errors'] ?? array() ) : array(),
                     'error_messages' => is_array( $validation_data ) ? ( $validation_data['error_messages'] ?? array() ) : array(),
-                ),
-                400
+                )
             );
         }
 
         if ( ! class_exists( '\RINAC\Concurrency\HoldManager' ) ) {
-            wp_send_json_error(
-                array(
-                    'endpoint' => 'rinac_quote_booking',
-                    'message' => esc_html__( 'HoldManager no disponible.', 'rinac' ),
-                ),
-                500
-            );
+            $this->sendApiError( 'rinac_quote_booking', 'hold_manager_unavailable', esc_html__( 'HoldManager no disponible.', 'rinac' ), 500 );
         }
 
         $hold_manager = new \RINAC\Concurrency\HoldManager();
@@ -369,31 +352,22 @@ class AjaxHandler {
         );
 
         if ( is_wp_error( $hold ) ) {
-            wp_send_json_error(
-                array(
-                    'endpoint' => 'rinac_quote_booking',
-                    'message' => $hold->get_error_message(),
-                ),
-                409
-            );
+            $this->sendApiError( 'rinac_quote_booking', 'hold_create_failed', $hold->get_error_message(), 409 );
         }
 
-        wp_send_json_success(
+        $this->sendApiSuccess(
+            'rinac_quote_booking',
             array(
-                'endpoint' => 'rinac_quote_booking',
-                'status' => 'ok',
                 'request_id' => wp_generate_uuid4(),
-                'payload' => array(
-                    'product_id' => $parsed['product_id'],
-                    'slot_id' => $parsed['slot_id'],
-                    'participants' => $validation['participants'],
-                    'resources' => $validation['resources'],
-                    'pricing' => $validation['pricing'],
-                    'capacity' => $validation['capacity'],
-                    'hold' => $hold,
-                ),
-                'message' => esc_html__( 'Quote validada y bloqueo temporal creado.', 'rinac' ),
-            )
+                'product_id' => $parsed['product_id'],
+                'slot_id' => $parsed['slot_id'],
+                'participants' => $validation['participants'],
+                'resources' => $validation['resources'],
+                'pricing' => $validation['pricing'],
+                'capacity' => $validation['capacity'],
+                'hold' => $hold,
+            ),
+            esc_html__( 'Quote validada y bloqueo temporal creado.', 'rinac' )
         );
     }
 
@@ -484,6 +458,52 @@ class AjaxHandler {
             'start' => $start,
             'end' => $end,
             'validation' => $validation,
+        );
+    }
+
+    /**
+     * Respuesta API de éxito, estable y versionada.
+     *
+     * @param string $endpoint
+     * @param array<string,mixed> $payload
+     * @param string $message
+     * @return void
+     */
+    private function sendApiSuccess( string $endpoint, array $payload, string $message ): void {
+        wp_send_json_success(
+            array(
+                'api_version' => self::API_VERSION,
+                'endpoint' => $endpoint,
+                'status' => 'ok',
+                'payload' => $payload,
+                'message' => $message,
+            )
+        );
+    }
+
+    /**
+     * Respuesta API de error, estable y versionada.
+     *
+     * @param string $endpoint
+     * @param string $code
+     * @param string $message
+     * @param int $http_status
+     * @param array<string,mixed> $context
+     * @return void
+     */
+    private function sendApiError( string $endpoint, string $code, string $message, int $http_status = 400, array $context = array() ): void {
+        wp_send_json_error(
+            array(
+                'api_version' => self::API_VERSION,
+                'endpoint' => $endpoint,
+                'status' => 'error',
+                'error' => array(
+                    'code' => $code,
+                    'message' => $message,
+                    'context' => $context,
+                ),
+            ),
+            $http_status
         );
     }
 
