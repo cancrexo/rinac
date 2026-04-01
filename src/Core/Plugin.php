@@ -28,6 +28,12 @@ class Plugin {
         ( new I18n() )->loadTextdomain();
         ( new PostTypesRegistrar() )->registerPostTypes();
         ( new ProductTypeRegistrar() )->registerProductType();
+
+        if ( class_exists( 'RINAC\\Payment\\DepositManager' ) ) {
+            $deposit_manager_class = 'RINAC\\Payment\\DepositManager';
+            ( new $deposit_manager_class() )->register();
+        }
+
         if ( class_exists( 'RINAC\\Frontend\\BookingForm' ) ) {
             $booking_form_class = 'RINAC\\Frontend\\BookingForm';
             ( new $booking_form_class() )->register();

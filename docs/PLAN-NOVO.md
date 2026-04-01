@@ -58,7 +58,7 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
    - `RINAC\Ajax\AjaxHandler` (única clase centralizada para TODOS los endpoints AJAX con nonce y checks).
    - `RINAC\Calendar\AvailabilityManager` (capacidad/ocupación y cálculo de disponibilidad; con caché transient).
    - `RINAC\Booking\BookingManager` (creación/validación de reservas, persistencia y reglas de negocio).
-   - `RINAC\Booking\DepositManager` (lógica de “depósito” y adaptación a hooks de WooCommerce).
+  - `RINAC\Payment\DepositManager` (lógica de “depósito” y adaptación a hooks de WooCommerce).
    - `RINAC\Booking\ResourceManager` (relación/selección de recursos en la reserva).
    - `RINAC\Booking\ParticipantManager` (tipos de participantes, precio/fracción, totalizadores).
    - `RINAC\Admin\GlobalCalendarPage` (pantalla admin calendario global + listado).
@@ -202,6 +202,13 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 
 11. **Sistema de pago con depósito + hooks WooCommerce**
    - Objetivo: soportar reservas con pago completo o con depósito % configurable, manteniendo la lógica en el plugin (sin depender de otros plugins de pago parcial).
+   - Estado actual (implementado en esta fase):
+     - campo `modo de pago` (`_rinac_payment_mode`: `full|deposit`) en producto `rinac_reserva`,
+     - uso de `DepositManager` para recalcular “a cobrar ahora” en carrito/checkout,
+     - persistencia en meta de línea de pedido: total servicio, depósito y pendiente,
+     - creación de `rinac_booking` vinculado a pedido/línea de pedido,
+     - sincronización de estado de reserva desde estado del pedido,
+     - liberación de capacidad al pasar pedido a `cancelled`, `failed` o `refunded`.
    - `DepositManager`:
      - Calcular el importe del depósito a partir de:
        - precio base del producto,
@@ -221,6 +228,11 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 
 12. **Calendario global admin + listado de reservas + Importación demo**
    - Objetivo: dar al admin una visión operativa clara de reservas y ocupación.
+   - Estado actual (implementado en esta fase):
+     - pantalla admin `Calendario global` dentro del menú RINAC,
+     - listado operativo de `rinac_booking` (producto, inicio/fin, slot, capacidad, estado, pedido),
+     - botón `Importar datos de prueba` con nonce y capability check vía `admin_post`,
+     - importación demo mínima consistente (producto reservable, slot y reservas demo).
    - `GlobalCalendarPage`:
      - Vista de calendario (FullCalendar o similar) filtrable por:
        - producto `rinac_reserva`,
@@ -241,6 +253,11 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 
 13. **Concurrencia y bloqueos temporales (quote/hold)**
    - Objetivo: evitar sobre-reservas en alta concurrencia, sin bloquear la experiencia de usuario.
+   - Estado actual (implementado en esta fase):
+     - endpoint `rinac_quote_booking` con validación de negocio + creación de hold temporal (`rinac_booking`),
+     - `hold_token` con expiración (`_rinac_hold_expires_at`) y limpieza de holds expirados,
+     - `rinac_create_booking_request` puede confirmar hold existente vía `hold_token`,
+     - `AvailabilityManager` excluye holds expirados/cancelados de la ocupación.
    - Endpoint de prevalidación `rinac_quote_booking`:
      - Validar disponibilidad y reglas de negocio (participantes, recursos, capacidad) para una propuesta de reserva.
      - Calcular un **precio preliminar** coherente con lo que luego se pagará en checkout.

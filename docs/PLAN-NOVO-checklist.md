@@ -9,9 +9,9 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 3. [x] Pestañas `woocommerce-product-data` y settings para productos `rinac_reserva`
 4. [x] Lógica de disponibilidad y cálculo de capacidad (clase `AvailabilityManager`)
 5. [x] Gestión de recursos y participantes (`ParticipantManager`, `ResourceManager`, `BookingManager`)
-6. [ ] Sistema de pago con depósito + hooks de WooCommerce (`DepositManager`)
-7. [ ] Calendario global admin + listado de reservas + botón “Importar datos de prueba”
-8. [ ] Control de concurrencia y bloqueos temporales (quote/hold antes de confirmar reserva)
+6. [x] Sistema de pago con depósito + hooks de WooCommerce (`DepositManager`)
+7. [x] Calendario global admin + listado de reservas + botón “Importar datos de prueba”
+8. [x] Control de concurrencia y bloqueos temporales (quote/hold antes de confirmar reserva)
 9. [ ] Frontend booking form + FullCalendar integración
 10. [ ] Templates y overrides
 11. [ ] Documentación completa (`README.md` + inline docs)

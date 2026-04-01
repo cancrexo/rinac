@@ -95,6 +95,10 @@ class BookingProductDataTabs {
         $capacity_min_booking = (int) get_post_meta( $product_id, '_rinac_capacity_min_booking', true );
         $availability_rules = (string) get_post_meta( $product_id, '_rinac_availability_rules', true );
         $deposit_percentage = (float) get_post_meta( $product_id, '_rinac_deposit_percentage', true );
+        $payment_mode = (string) get_post_meta( $product_id, '_rinac_payment_mode', true );
+        if ( '' === $payment_mode ) {
+            $payment_mode = 'full';
+        }
 
         $selected_slots = $this->normalizeMetaIdList( get_post_meta( $product_id, '_rinac_allowed_slots', true ) );
         $selected_participants = $this->normalizeMetaIdList( get_post_meta( $product_id, '_rinac_allowed_participant_types', true ) );
@@ -114,6 +118,7 @@ class BookingProductDataTabs {
             0
         );
         $this->renderNumberField( 'rinac_capacity_total_max', __( 'Capacidad global máxima', 'rinac' ), $capacity_total_max, 0 );
+        $this->renderSelectField( 'rinac_payment_mode', __( 'Modo de pago', 'rinac' ), $payment_mode, $this->getPaymentModes() );
         $this->renderNumberField( 'rinac_deposit_percentage', __( 'Depósito (%)', 'rinac' ), (string) $deposit_percentage, 0, 100, 0.01, 'number' );
         echo '</div>';
         echo '</div>';
@@ -194,6 +199,12 @@ class BookingProductDataTabs {
         $deposit_percentage = max( 0.0, min( 100.0, $deposit_percentage ) );
         update_post_meta( $post_id, '_rinac_deposit_percentage', $deposit_percentage );
 
+        $payment_mode = isset( $post_data['rinac_payment_mode'] ) ? sanitize_key( wp_unslash( (string) $post_data['rinac_payment_mode'] ) ) : 'full';
+        if ( ! array_key_exists( $payment_mode, $this->getPaymentModes() ) ) {
+            $payment_mode = 'full';
+        }
+        update_post_meta( $post_id, '_rinac_payment_mode', $payment_mode );
+
         update_post_meta( $post_id, '_rinac_allowed_slots', $this->sanitizeIdArrayFromPost( $post_data, 'rinac_allowed_slots' ) );
         update_post_meta( $post_id, '_rinac_allowed_participant_types', $this->sanitizeIdArrayFromPost( $post_data, 'rinac_allowed_participant_types' ) );
         update_post_meta( $post_id, '_rinac_allowed_resources', $this->sanitizeIdArrayFromPost( $post_data, 'rinac_allowed_resources' ) );
@@ -252,6 +263,27 @@ class BookingProductDataTabs {
         echo '<p class="form-field">';
         echo '<label for="' . esc_attr( $name ) . '"><strong>' . esc_html( $label ) . '</strong></label>';
         echo '<input type="' . esc_attr( $type ) . '" min="' . esc_attr( (string) $min ) . '" step="' . esc_attr( (string) $step ) . '"' . $max_attr . ' id="' . esc_attr( $name ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( (string) $value ) . '" class="small-text" />';
+        echo '</p>';
+    }
+
+    /**
+     * Render select simple.
+     *
+     * @param string $name Name del input.
+     * @param string $label Label.
+     * @param string $value Valor actual.
+     * @param array<string,string> $options Opciones.
+     * @return void
+     */
+    private function renderSelectField( string $name, string $label, string $value, array $options ): void {
+        echo '<p class="form-field">';
+        echo '<label for="' . esc_attr( $name ) . '"><strong>' . esc_html( $label ) . '</strong></label>';
+        echo '<select id="' . esc_attr( $name ) . '" name="' . esc_attr( $name ) . '">';
+        foreach ( $options as $option_key => $option_label ) {
+            $selected = selected( $value, $option_key, false );
+            echo '<option value="' . esc_attr( $option_key ) . '"' . $selected . '>' . esc_html( $option_label ) . '</option>';
+        }
+        echo '</select>';
         echo '</p>';
     }
 
@@ -339,6 +371,18 @@ class BookingProductDataTabs {
             'date_range_same_time' => __( 'Rango de fechas con misma franja', 'rinac' ),
             'slot_dia'            => __( 'Slot por día', 'rinac' ),
             'unidad_rango'         => __( 'Unidad + rango de fechas', 'rinac' ),
+        );
+    }
+
+    /**
+     * Lista de modos de pago permitidos.
+     *
+     * @return array<string,string>
+     */
+    private function getPaymentModes(): array {
+        return array(
+            'full' => __( 'Pago completo', 'rinac' ),
+            'deposit' => __( 'Depósito + resto', 'rinac' ),
         );
     }
 }

@@ -30,6 +30,7 @@ class AjaxHandler {
         $endpoints = array(
             'rinac_get_availability',
             'rinac_get_calendar_events',
+            'rinac_quote_booking',
             'rinac_create_booking_request',
             'rinac_get_allowed_participants',
             'rinac_get_allowed_resources',
@@ -75,6 +76,9 @@ class AjaxHandler {
                 break;
             case 'rinac_get_calendar_events':
                 $this->handleGetCalendarEvents();
+                break;
+            case 'rinac_quote_booking':
+                $this->handleQuoteBooking();
                 break;
             case 'rinac_create_booking_request':
                 $this->handleCreateBookingRequest();
@@ -265,28 +269,165 @@ class AjaxHandler {
         /** @noinspection PhpUndefinedVariableInspection */
         $request = isset( $_REQUEST ) && is_array( $_REQUEST ) ? $_REQUEST : array();
 
+        $parsed = $this->parseBookingPayload( $request );
+        $product_id = $parsed['product_id'];
+        $slot_id = $parsed['slot_id'];
+        $start = $parsed['start'];
+        $end = $parsed['end'];
+        $validation = $parsed['validation'];
+
+        if ( is_wp_error( $validation ) ) {
+            $validation_data = $validation->get_error_data( 'rinac_booking_validation_failed' );
+            wp_send_json_error(
+                array(
+                    'endpoint' => 'rinac_create_booking_request',
+                    'message'  => $validation->get_error_message(),
+                    'errors'   => is_array( $validation_data ) ? ( $validation_data['errors'] ?? array() ) : array(),
+                    'error_messages' => is_array( $validation_data ) ? ( $validation_data['error_messages'] ?? array() ) : array(),
+                ),
+                400
+            );
+        }
+
+        $hold_token = isset( $request['hold_token'] ) ? sanitize_text_field( wp_unslash( (string) $request['hold_token'] ) ) : '';
+        $hold_response = array();
+        if ( '' !== $hold_token && class_exists( '\RINAC\Concurrency\HoldManager' ) ) {
+            $hold_manager = new \RINAC\Concurrency\HoldManager();
+            $confirmed_hold = $hold_manager->confirmHold( $hold_token );
+            if ( is_wp_error( $confirmed_hold ) ) {
+                wp_send_json_error(
+                    array(
+                        'endpoint' => 'rinac_create_booking_request',
+                        'message' => $confirmed_hold->get_error_message(),
+                    ),
+                    409
+                );
+            }
+            $hold_response = $confirmed_hold;
+        }
+
+        wp_send_json_success(
+            array(
+                'endpoint' => 'rinac_create_booking_request',
+                'status' => 'ok',
+                'request_id' => wp_generate_uuid4(),
+                'payload' => array(
+                    'product_id' => $product_id,
+                    'slot_id' => $slot_id,
+                    'participants' => $validation['participants'],
+                    'resources'    => $validation['resources'],
+                    'pricing'      => $validation['pricing'],
+                    'capacity'     => $validation['capacity'],
+                    'hold'         => $hold_response,
+                ),
+                'message' => esc_html__( 'Solicitud de reserva validada (sin persistir).', 'rinac' ),
+            )
+        );
+    }
+
+    /**
+     * Endpoint de quote con bloqueo temporal.
+     *
+     * @return void
+     */
+    private function handleQuoteBooking(): void {
+        /** @noinspection PhpUndefinedVariableInspection */
+        $request = isset( $_REQUEST ) && is_array( $_REQUEST ) ? $_REQUEST : array();
+        $parsed = $this->parseBookingPayload( $request );
+
+        $validation = $parsed['validation'];
+        if ( is_wp_error( $validation ) ) {
+            $validation_data = $validation->get_error_data( 'rinac_booking_validation_failed' );
+            wp_send_json_error(
+                array(
+                    'endpoint' => 'rinac_quote_booking',
+                    'message'  => $validation->get_error_message(),
+                    'errors'   => is_array( $validation_data ) ? ( $validation_data['errors'] ?? array() ) : array(),
+                    'error_messages' => is_array( $validation_data ) ? ( $validation_data['error_messages'] ?? array() ) : array(),
+                ),
+                400
+            );
+        }
+
+        if ( ! class_exists( '\RINAC\Concurrency\HoldManager' ) ) {
+            wp_send_json_error(
+                array(
+                    'endpoint' => 'rinac_quote_booking',
+                    'message' => esc_html__( 'HoldManager no disponible.', 'rinac' ),
+                ),
+                500
+            );
+        }
+
+        $hold_manager = new \RINAC\Concurrency\HoldManager();
+        $hold = $hold_manager->createHold(
+            $parsed['product_id'],
+            $parsed['slot_id'],
+            $parsed['start'],
+            $parsed['end'],
+            (float) ( $validation['capacity']['equivalent_total'] ?? 0.0 )
+        );
+
+        if ( is_wp_error( $hold ) ) {
+            wp_send_json_error(
+                array(
+                    'endpoint' => 'rinac_quote_booking',
+                    'message' => $hold->get_error_message(),
+                ),
+                409
+            );
+        }
+
+        wp_send_json_success(
+            array(
+                'endpoint' => 'rinac_quote_booking',
+                'status' => 'ok',
+                'request_id' => wp_generate_uuid4(),
+                'payload' => array(
+                    'product_id' => $parsed['product_id'],
+                    'slot_id' => $parsed['slot_id'],
+                    'participants' => $validation['participants'],
+                    'resources' => $validation['resources'],
+                    'pricing' => $validation['pricing'],
+                    'capacity' => $validation['capacity'],
+                    'hold' => $hold,
+                ),
+                'message' => esc_html__( 'Quote validada y bloqueo temporal creado.', 'rinac' ),
+            )
+        );
+    }
+
+    /**
+     * Parsea payload de booking y ejecuta validación base.
+     *
+     * @param array<string,mixed> $request
+     * @return array<string,mixed>
+     */
+    private function parseBookingPayload( array $request ): array {
         $product_id = isset( $request['product_id'] ) ? absint( $request['product_id'] ) : 0;
         $slot_id = isset( $request['slot_id'] ) ? absint( $request['slot_id'] ) : 0;
         $start = isset( $request['start'] ) ? sanitize_text_field( wp_unslash( (string) $request['start'] ) ) : '';
         $end = isset( $request['end'] ) ? sanitize_text_field( wp_unslash( (string) $request['end'] ) ) : '';
 
         if ( $product_id <= 0 ) {
-            wp_send_json_error(
-                array(
-                    'message' => esc_html__( 'Producto inválido.', 'rinac' ),
-                ),
-                400
+            return array(
+                'product_id' => 0,
+                'slot_id' => $slot_id,
+                'start' => $start,
+                'end' => $end,
+                'validation' => new \WP_Error( 'rinac_invalid_product', esc_html__( 'Producto inválido.', 'rinac' ) ),
             );
         }
 
         $wc_get_product_callable = 'wc_get_product';
         $product = $wc_get_product_callable( $product_id );
         if ( ! $product ) {
-            wp_send_json_error(
-                array(
-                    'message' => esc_html__( 'No se ha encontrado el producto.', 'rinac' ),
-                ),
-                400
+            return array(
+                'product_id' => $product_id,
+                'slot_id' => $slot_id,
+                'start' => $start,
+                'end' => $end,
+                'validation' => new \WP_Error( 'rinac_product_not_found', esc_html__( 'No se ha encontrado el producto.', 'rinac' ) ),
             );
         }
 
@@ -307,10 +448,7 @@ class AjaxHandler {
             $id = isset( $item['id'] ) ? absint( $item['id'] ) : 0;
             $qty = isset( $item['qty'] ) ? absint( $item['qty'] ) : 0;
             if ( $id > 0 && $qty > 0 ) {
-                $participants[] = array(
-                    'id'  => $id,
-                    'qty' => $qty,
-                );
+                $participants[] = array( 'id' => $id, 'qty' => $qty );
             }
         }
 
@@ -322,10 +460,7 @@ class AjaxHandler {
             $id = isset( $item['id'] ) ? absint( $item['id'] ) : 0;
             $qty = isset( $item['qty'] ) ? absint( $item['qty'] ) : 0;
             if ( $id > 0 && $qty > 0 ) {
-                $resources[] = array(
-                    'id'  => $id,
-                    'qty' => $qty,
-                );
+                $resources[] = array( 'id' => $id, 'qty' => $qty );
             }
         }
 
@@ -343,34 +478,12 @@ class AjaxHandler {
             )
         );
 
-        if ( is_wp_error( $validation ) ) {
-            $validation_data = $validation->get_error_data( 'rinac_booking_validation_failed' );
-            wp_send_json_error(
-                array(
-                    'endpoint' => 'rinac_create_booking_request',
-                    'message'  => $validation->get_error_message(),
-                    'errors'   => is_array( $validation_data ) ? ( $validation_data['errors'] ?? array() ) : array(),
-                    'error_messages' => is_array( $validation_data ) ? ( $validation_data['error_messages'] ?? array() ) : array(),
-                ),
-                400
-            );
-        }
-
-        wp_send_json_success(
-            array(
-                'endpoint' => 'rinac_create_booking_request',
-                'status' => 'ok',
-                'request_id' => wp_generate_uuid4(),
-                'payload' => array(
-                    'product_id' => $product_id,
-                    'slot_id' => $slot_id,
-                    'participants' => $validation['participants'],
-                    'resources'    => $validation['resources'],
-                    'pricing'      => $validation['pricing'],
-                    'capacity'     => $validation['capacity'],
-                ),
-                'message' => esc_html__( 'Solicitud de reserva validada (sin persistir).', 'rinac' ),
-            )
+        return array(
+            'product_id' => $product_id,
+            'slot_id' => $slot_id,
+            'start' => $start,
+            'end' => $end,
+            'validation' => $validation,
         );
     }
 

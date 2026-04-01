@@ -269,6 +269,9 @@ class AvailabilityManager {
         }
 
         foreach ( $query->posts as $booking_id ) {
+            if ( ! $this->shouldCountBookingForOccupancy( (int) $booking_id ) ) {
+                continue;
+            }
             $qty = get_post_meta( $booking_id, '_rinac_booking_equivalent_qty', true );
             if ( is_numeric( $qty ) ) {
                 $equivalent_qty += (float) $qty;
@@ -311,6 +314,9 @@ class AvailabilityManager {
         }
 
         foreach ( $query->posts as $booking_id ) {
+            if ( ! $this->shouldCountBookingForOccupancy( (int) $booking_id ) ) {
+                continue;
+            }
             $qty = get_post_meta( $booking_id, '_rinac_booking_equivalent_qty', true );
             if ( is_numeric( $qty ) ) {
                 $equivalent_qty += (float) $qty;
@@ -364,6 +370,32 @@ class AvailabilityManager {
         $raw = $product_id . '|' . $booking_mode . '|' . $start . '|' . $end . '|' . $slot_part;
 
         return 'rinac_availability_' . md5( $raw );
+    }
+
+    /**
+     * Define si una reserva debe impactar ocupación.
+     *
+     * @param int $booking_id
+     * @return bool
+     */
+    private function shouldCountBookingForOccupancy( int $booking_id ): bool {
+        if ( $booking_id <= 0 ) {
+            return false;
+        }
+
+        $booking_status = (string) get_post_meta( $booking_id, '_rinac_booking_status', true );
+        if ( 'cancelled' === $booking_status || 'expired' === $booking_status ) {
+            return false;
+        }
+
+        if ( 'hold' === $booking_status ) {
+            $expires_at = (int) get_post_meta( $booking_id, '_rinac_hold_expires_at', true );
+            if ( $expires_at > 0 && $expires_at < time() ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
 

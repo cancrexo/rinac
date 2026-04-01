@@ -108,7 +108,9 @@ Después de mostrarme ese plan detallado, desarrolla el plugin paso a paso en es
 5. Gestión de recursos y participantes
 6. Sistema de pago depósito + hooks de WooCommerce
 7. Calendario global admin + listado de reservas + botón "Importar datos de prueba"
+  - Estado actual: implementado con pantalla admin operativa, tabla de reservas y acción `admin_post` para importar datos demo.
 8. Concurrencia (quote/hold) para bloqueo temporal antes de confirmar reserva
+  - Estado actual: implementado endpoint `rinac_quote_booking`, creación/confirmación de holds con expiración y ajuste de disponibilidad para ignorar holds expirados.
 9. Frontend booking form + FullCalendar integración
 10. Templates y overrides
 11. Documentación completa (README.md + inline docs)
@@ -120,7 +122,13 @@ Detalle Paso 3 (admin UX):
   - capacidad base (`_rinac_base_capacity`): capacidad base del producto usada para calcular la **capacidad efectiva global**.
   - capacidad mínima por reserva (`_rinac_capacity_min_booking`): mínimo requerido de capacidad restante para que una reserva sea válida.
   - capacidad global máxima (`_rinac_capacity_total_max`): tope global que limita la capacidad efectiva del producto (en esta fase, se aplica como limitación del total).
-  - depósito (`_rinac_deposit_percentage`): porcentaje de depósito (se usará en la lógica de pago/estado del order; en esta fase no limita la capacidad).
+  - depósito (`_rinac_deposit_percentage`): porcentaje de depósito (usado para calcular “a cobrar ahora” en checkout).
+  - modo de pago (`_rinac_payment_mode`): `full` (pago completo) o `deposit` (depósito + pendiente).
+  - estado actual de implementación:
+    - cálculo en carrito/checkout y persistencia de metadatos de depósito en líneas de pedido,
+    - creación de `rinac_booking` por línea de pedido,
+    - sincronización de estado pedido→reserva,
+    - liberación de capacidad cuando el pedido se cancela/falla/reembolsa.
 - Pestaña `Slots`:
   - selección multivalor de slots permitidos (`_rinac_allowed_slots`)
 - Pestaña `Participantes`:
