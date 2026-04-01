@@ -149,6 +149,9 @@ class BookingRecordRepository {
             'booking_status' => '' !== $booking_status ? $booking_status : 'hold',
             'hold_token' => isset( $data['hold_token'] ) ? sanitize_text_field( (string) $data['hold_token'] ) : '',
             'hold_expires_at' => isset( $data['hold_expires_at'] ) ? (int) $data['hold_expires_at'] : 0,
+            'hold_scope' => isset( $data['hold_scope'] ) ? sanitize_key( (string) $data['hold_scope'] ) : '',
+            'hold_last_refresh_at' => isset( $data['hold_last_refresh_at'] ) ? (int) $data['hold_last_refresh_at'] : 0,
+            'hold_max_expires_at' => isset( $data['hold_max_expires_at'] ) ? (int) $data['hold_max_expires_at'] : 0,
         );
     }
 
@@ -174,6 +177,15 @@ class BookingRecordRepository {
         }
         if ( (int) $payload['hold_expires_at'] > 0 ) {
             update_post_meta( $booking_id, '_rinac_hold_expires_at', (int) $payload['hold_expires_at'] );
+        }
+        if ( '' !== (string) $payload['hold_scope'] ) {
+            update_post_meta( $booking_id, '_rinac_hold_scope', (string) $payload['hold_scope'] );
+        }
+        if ( (int) $payload['hold_last_refresh_at'] > 0 ) {
+            update_post_meta( $booking_id, '_rinac_hold_last_refresh_at', (int) $payload['hold_last_refresh_at'] );
+        }
+        if ( (int) $payload['hold_max_expires_at'] > 0 ) {
+            update_post_meta( $booking_id, '_rinac_hold_max_expires_at', (int) $payload['hold_max_expires_at'] );
         }
     }
 

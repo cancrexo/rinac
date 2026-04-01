@@ -321,6 +321,25 @@ class AjaxHandler {
     private function handleQuoteBooking(): void {
         /** @noinspection PhpUndefinedVariableInspection */
         $request = isset( $_REQUEST ) && is_array( $_REQUEST ) ? $_REQUEST : array();
+
+        $hold_token = isset( $request['hold_token'] ) ? sanitize_text_field( wp_unslash( (string) $request['hold_token'] ) ) : '';
+        if ( '' !== $hold_token && class_exists( '\RINAC\Concurrency\HoldManager' ) ) {
+            $hold_manager = new \RINAC\Concurrency\HoldManager();
+            $refreshed_hold = $hold_manager->refreshCartHold( $hold_token );
+
+            if ( ! is_wp_error( $refreshed_hold ) ) {
+                $this->sendApiSuccess(
+                    'rinac_quote_booking',
+                    array(
+                        'request_id' => wp_generate_uuid4(),
+                        'hold' => $refreshed_hold,
+                        'refreshed' => true,
+                    ),
+                    esc_html__( 'Hold de carrito refrescado.', 'rinac' )
+                );
+            }
+        }
+
         $parsed = $this->parseBookingPayload( $request );
 
         $validation = $parsed['validation'];

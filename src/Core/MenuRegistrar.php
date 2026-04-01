@@ -8,6 +8,7 @@ use RINAC\Booking\BookingRecordRepository;
  * Menú de administración de RINAC.
  */
 class MenuRegistrar {
+    private const SETTINGS_OPTION_KEY = 'rinac_settings';
     private BookingRecordRepository $bookingRepository;
 
     public function __construct() {
@@ -258,9 +259,44 @@ class MenuRegistrar {
      * @return void
      */
     public function renderAjustes(): void {
+        $settings = $this->getSettings();
+
         echo '<div class="wrap">';
         echo '<h1>' . esc_html__( 'RINAC - Ajustes', 'rinac' ) . '</h1>';
         echo '<p>' . esc_html__( 'Herramientas administrativas del plugin.', 'rinac' ) . '</p>';
+        echo '<h2 style="margin-top:24px;">' . esc_html__( 'Concurrencia (hold)', 'rinac' ) . '</h2>';
+        echo '<form method="post" action="' . esc_url( admin_url( 'options.php' ) ) . '" style="max-width:900px;">';
+        settings_fields( 'rinac_settings_group' );
+        echo '<table class="form-table" role="presentation"><tbody>';
+
+        echo '<tr><th scope="row"><label for="rinac_cart_hold_ttl_minutes">' . esc_html__( 'Cart hold TTL (minutos)', 'rinac' ) . '</label></th><td>';
+        echo '<input id="rinac_cart_hold_ttl_minutes" name="rinac_settings[cart_hold_ttl_minutes]" type="number" min="1" step="1" value="' . esc_attr( (string) $settings['cart_hold_ttl_minutes'] ) . '" class="small-text" />';
+        echo '</td></tr>';
+
+        echo '<tr><th scope="row"><label for="rinac_cart_hold_max_lifetime_minutes">' . esc_html__( 'Cart hold vida máxima (minutos)', 'rinac' ) . '</label></th><td>';
+        echo '<input id="rinac_cart_hold_max_lifetime_minutes" name="rinac_settings[cart_hold_max_lifetime_minutes]" type="number" min="1" step="1" value="' . esc_attr( (string) $settings['cart_hold_max_lifetime_minutes'] ) . '" class="small-text" />';
+        echo '</td></tr>';
+
+        echo '<tr><th scope="row"><label for="rinac_cart_hold_refresh_min_interval_seconds">' . esc_html__( 'Cart hold refresco mínimo (segundos)', 'rinac' ) . '</label></th><td>';
+        echo '<input id="rinac_cart_hold_refresh_min_interval_seconds" name="rinac_settings[cart_hold_refresh_min_interval_seconds]" type="number" min="10" step="1" value="' . esc_attr( (string) $settings['cart_hold_refresh_min_interval_seconds'] ) . '" class="small-text" />';
+        echo '</td></tr>';
+
+        echo '<tr><th scope="row"><label for="rinac_order_hold_ttl_pending_minutes">' . esc_html__( 'Order hold pendiente (minutos)', 'rinac' ) . '</label></th><td>';
+        echo '<input id="rinac_order_hold_ttl_pending_minutes" name="rinac_settings[order_hold_ttl_pending_minutes]" type="number" min="5" step="1" value="' . esc_attr( (string) $settings['order_hold_ttl_pending_minutes'] ) . '" class="small-text" />';
+        echo '</td></tr>';
+
+        echo '<tr><th scope="row"><label for="rinac_order_hold_ttl_on_hold_hours">' . esc_html__( 'Order hold on-hold (horas)', 'rinac' ) . '</label></th><td>';
+        echo '<input id="rinac_order_hold_ttl_on_hold_hours" name="rinac_settings[order_hold_ttl_on_hold_hours]" type="number" min="1" step="1" value="' . esc_attr( (string) $settings['order_hold_ttl_on_hold_hours'] ) . '" class="small-text" />';
+        echo '</td></tr>';
+
+        echo '<tr><th scope="row"><label for="rinac_order_hold_ttl_bacs_hours">' . esc_html__( 'Order hold transferencia/BACS (horas)', 'rinac' ) . '</label></th><td>';
+        echo '<input id="rinac_order_hold_ttl_bacs_hours" name="rinac_settings[order_hold_ttl_bacs_hours]" type="number" min="1" step="1" value="' . esc_attr( (string) $settings['order_hold_ttl_bacs_hours'] ) . '" class="small-text" />';
+        echo '</td></tr>';
+
+        echo '</tbody></table>';
+        submit_button( __( 'Guardar ajustes de concurrencia', 'rinac' ) );
+        echo '</form>';
+
         echo '<div style="border:1px solid #d63638;background:#fff5f5;padding:12px;margin-top:16px;max-width:900px;">';
         echo '<p style="margin-top:0;"><strong>' . esc_html__( 'Importar datos de prueba', 'rinac' ) . '</strong></p>';
         echo '<p>' . esc_html__( 'Esta acción crea/actualiza datos demo para pruebas internas. No usar en producción sin copia de seguridad.', 'rinac' ) . '</p>';
@@ -271,6 +307,19 @@ class MenuRegistrar {
         echo '</form>';
         echo '</div>';
         echo '</div>';
+    }
+
+    /**
+     * Registra opciones persistentes de configuración.
+     *
+     * @return void
+     */
+    public function registerSettings(): void {
+        register_setting(
+            'rinac_settings_group',
+            self::SETTINGS_OPTION_KEY,
+            array( $this, 'sanitizeSettings' )
+        );
     }
 
     /**
@@ -467,5 +516,66 @@ class MenuRegistrar {
         );
 
         return (int) $query->found_posts;
+    }
+
+    /**
+     * Lee configuración con defaults.
+     *
+     * @return array<string,int>
+     */
+    private function getSettings(): array {
+        $raw = get_option( self::SETTINGS_OPTION_KEY, array() );
+        if ( ! is_array( $raw ) ) {
+            $raw = array();
+        }
+
+        return array(
+            'cart_hold_ttl_minutes' => isset( $raw['cart_hold_ttl_minutes'] ) ? (int) $raw['cart_hold_ttl_minutes'] : 15,
+            'cart_hold_max_lifetime_minutes' => isset( $raw['cart_hold_max_lifetime_minutes'] ) ? (int) $raw['cart_hold_max_lifetime_minutes'] : 90,
+            'cart_hold_refresh_min_interval_seconds' => isset( $raw['cart_hold_refresh_min_interval_seconds'] ) ? (int) $raw['cart_hold_refresh_min_interval_seconds'] : 60,
+            'order_hold_ttl_pending_minutes' => isset( $raw['order_hold_ttl_pending_minutes'] ) ? (int) $raw['order_hold_ttl_pending_minutes'] : 45,
+            'order_hold_ttl_on_hold_hours' => isset( $raw['order_hold_ttl_on_hold_hours'] ) ? (int) $raw['order_hold_ttl_on_hold_hours'] : 24,
+            'order_hold_ttl_bacs_hours' => isset( $raw['order_hold_ttl_bacs_hours'] ) ? (int) $raw['order_hold_ttl_bacs_hours'] : 72,
+        );
+    }
+
+    /**
+     * Sanitiza ajustes de concurrencia guardados en admin.
+     *
+     * @param mixed $input
+     * @return array<string,int>
+     */
+    public function sanitizeSettings( $input ): array {
+        $settings = is_array( $input ) ? $input : array();
+
+        return array(
+            'cart_hold_ttl_minutes' => $this->sanitizeIntRange( $settings, 'cart_hold_ttl_minutes', 15, 1, 240 ),
+            'cart_hold_max_lifetime_minutes' => $this->sanitizeIntRange( $settings, 'cart_hold_max_lifetime_minutes', 90, 5, 1440 ),
+            'cart_hold_refresh_min_interval_seconds' => $this->sanitizeIntRange( $settings, 'cart_hold_refresh_min_interval_seconds', 60, 10, 600 ),
+            'order_hold_ttl_pending_minutes' => $this->sanitizeIntRange( $settings, 'order_hold_ttl_pending_minutes', 45, 5, 1440 ),
+            'order_hold_ttl_on_hold_hours' => $this->sanitizeIntRange( $settings, 'order_hold_ttl_on_hold_hours', 24, 1, 720 ),
+            'order_hold_ttl_bacs_hours' => $this->sanitizeIntRange( $settings, 'order_hold_ttl_bacs_hours', 72, 1, 720 ),
+        );
+    }
+
+    /**
+     * Sanitiza entero dentro de un rango cerrado.
+     *
+     * @param array<string,mixed> $settings
+     * @param string $key
+     * @param int $default
+     * @param int $min
+     * @param int $max
+     * @return int
+     */
+    private function sanitizeIntRange( array $settings, string $key, int $default, int $min, int $max ): int {
+        $value = isset( $settings[ $key ] ) ? (int) $settings[ $key ] : $default;
+        if ( $value < $min ) {
+            return $min;
+        }
+        if ( $value > $max ) {
+            return $max;
+        }
+        return $value;
     }
 }

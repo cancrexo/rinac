@@ -108,6 +108,7 @@ class BookingMetaBoxes {
             if ( 'title' === $key ) {
                 $ordered['rinac_booking_id'] = __( 'ID reserva', 'rinac' );
                 $ordered['title'] = $label;
+                $ordered['rinac_booking_details'] = __( 'Datos reserva', 'rinac' );
                 $ordered['rinac_booking_status'] = __( 'Estado RINAC', 'rinac' );
                 continue;
             }
@@ -125,6 +126,9 @@ class BookingMetaBoxes {
         if ( ! isset( $ordered['rinac_booking_status'] ) ) {
             $ordered['rinac_booking_status'] = __( 'Estado RINAC', 'rinac' );
         }
+        if ( ! isset( $ordered['rinac_booking_details'] ) ) {
+            $ordered['rinac_booking_details'] = __( 'Datos reserva', 'rinac' );
+        }
 
         return $ordered;
     }
@@ -139,6 +143,45 @@ class BookingMetaBoxes {
     public function renderAdminColumn( string $column_name, int $post_id ): void {
         if ( 'rinac_booking_id' === $column_name ) {
             echo esc_html( (string) $post_id );
+            return;
+        }
+
+        if ( 'rinac_booking_details' === $column_name ) {
+            $product_id = (int) get_post_meta( $post_id, '_rinac_booking_product_id', true );
+            $slot_id = (int) get_post_meta( $post_id, '_rinac_booking_slot_id', true );
+            $start = (string) get_post_meta( $post_id, '_rinac_booking_start', true );
+            $end = (string) get_post_meta( $post_id, '_rinac_booking_end', true );
+            $equivalent_qty = (float) get_post_meta( $post_id, '_rinac_booking_equivalent_qty', true );
+
+            $product_label = '-';
+            if ( $product_id > 0 ) {
+                $product_title = get_the_title( $product_id );
+                $product_label = '#' . $product_id . ' - ' . ( is_string( $product_title ) && '' !== $product_title ? $product_title : __( 'Sin título', 'rinac' ) );
+            }
+
+            $slot_label = '-';
+            if ( $slot_id > 0 ) {
+                $slot_title = get_the_title( $slot_id );
+                $slot_start = (string) get_post_meta( $slot_id, '_rinac_slot_start_time', true );
+                $slot_end = (string) get_post_meta( $slot_id, '_rinac_slot_end_time', true );
+                $slot_label = '#' . $slot_id;
+                if ( is_string( $slot_title ) && '' !== $slot_title ) {
+                    $slot_label .= ' - ' . $slot_title;
+                }
+                if ( '' !== $slot_start || '' !== $slot_end ) {
+                    $slot_label .= ' (' . $slot_start . ' - ' . $slot_end . ')';
+                }
+            }
+
+            $date_label = '-';
+            if ( '' !== $start || '' !== $end ) {
+                $date_label = ( '' !== $start ? $start : '-' ) . ' -> ' . ( '' !== $end ? $end : '-' );
+            }
+
+            echo '<strong>' . esc_html__( 'Producto:', 'rinac' ) . '</strong> ' . esc_html( $product_label ) . '<br />';
+            echo '<strong>' . esc_html__( 'Fecha:', 'rinac' ) . '</strong> ' . esc_html( $date_label ) . '<br />';
+            echo '<strong>' . esc_html__( 'Slot:', 'rinac' ) . '</strong> ' . esc_html( $slot_label ) . '<br />';
+            echo '<strong>' . esc_html__( 'Participantes:', 'rinac' ) . '</strong> ' . esc_html( number_format_i18n( $equivalent_qty, 2 ) );
             return;
         }
 

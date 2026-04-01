@@ -26,6 +26,10 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 - [x] Formalizar e implementar política de limpieza de holds (cron + lazy cleanup) con TTL configurable.
 - [x] Asegurar invalidación de caché de disponibilidad ante todos los eventos críticos (confirmación/cancelación/expiración/edición relevante).
 - [x] Definir contrato final de endpoints backend (`availability`, `quote`, `create`) con payloads y errores estables.
+- [x] Diferenciar explícitamente `cart_hold` vs `order_hold` con meta `_rinac_hold_scope`.
+- [x] Implementar expiración deslizante para `cart_hold` (refresh por actividad con límite temporal máximo).
+- [x] Implementar expiración de `order_hold` dependiente de estado/método de pago del pedido.
+- [x] Mantener liberación de capacidad por expiración/cancelación basándose en `_rinac_booking_status`.
 - [x] Añadir tests backend mínimos obligatorios:
   - [x] unit: `HoldManager` (create/get/confirm/expire/idempotencia),
   - [x] unit: `DepositManager` (full/deposit y persistencia),
@@ -85,4 +89,58 @@ IMPORTANTE: cada vez que se modifique el plan de trabajo, hay que actualizar tam
 
 ### Referencia funcional
 - Ver casos de uso y alcance funcional en `PLAN-NOVO.md` (sección de casos de uso).
+
+### Comandos de validación manual (operativos)
+
+> Nota: sustituir IDs de ejemplo (`product_id`, `slot_id`, `participant_id`, `BOOKING_ID`) por los del entorno actual.
+
+1) Crear nonce válido para AJAX RINAC:
+```bash
+../tools/wp eval 'echo wp_create_nonce("rinac_ajax"), PHP_EOL;'
+```
+
+2) Comprobar disponibilidad:
+```bash
+curl -k -X POST "https://woo.lan/wp-admin/admin-ajax.php" \
+  -d "action=rinac_get_availability" \
+  -d "nonce=<NONCE>" \
+  -d "product_id=182" \
+  -d "slot_id=164" \
+  -d "start=2026-04-10" \
+  -d "end=2026-04-10"
+```
+
+3) Crear quote/hold:
+```bash
+curl -k -X POST "https://woo.lan/wp-admin/admin-ajax.php" \
+  -d "action=rinac_quote_booking" \
+  -d "nonce=<NONCE>" \
+  -d "product_id=182" \
+  -d "slot_id=164" \
+  -d "start=2026-04-10" \
+  -d "end=2026-04-10" \
+  -d "participants[0][id]=167" \
+  -d "participants[0][qty]=1"
+```
+
+4) Liberar un hold concreto:
+```bash
+../tools/wp post meta update <BOOKING_ID> _rinac_booking_status expired --path=/home/tecnico/webproyects/woo.lan/httpdocs --url=woo.lan
+../tools/wp post update <BOOKING_ID> --post_status=draft --path=/home/tecnico/webproyects/woo.lan/httpdocs --url=woo.lan
+```
+
+5) Liberar todos los holds de un producto:
+```bash
+WP="../tools/wp --path=/home/tecnico/webproyects/woo.lan/httpdocs --url=woo.lan"
+PRODUCT_ID=182
+for ID in $($WP post list --post_type=rinac_booking --post_status=any --field=ID); do
+  PID=$($WP post meta get "$ID" _rinac_booking_product_id --format=plaintext 2>/dev/null || echo "")
+  BST=$($WP post meta get "$ID" _rinac_booking_status --format=plaintext 2>/dev/null || echo "")
+  if [ "$PID" = "$PRODUCT_ID" ] && [ "$BST" = "hold" ]; then
+    $WP post meta update "$ID" _rinac_booking_status expired >/dev/null
+    $WP post update "$ID" --post_status=draft >/dev/null
+    echo "Hold liberado: $ID"
+  fi
+done
+```
 

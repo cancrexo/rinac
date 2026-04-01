@@ -24,6 +24,9 @@ class RinacWpTestStore {
     /** @var array<string,mixed> */
     public static array $transients = array();
 
+    /** @var array<string,mixed> */
+    public static array $options = array();
+
     public static function reset(): void {
         self::$meta = array();
         self::$posts = array();
@@ -32,6 +35,7 @@ class RinacWpTestStore {
         self::$scheduledHooks = array();
         self::$nextPostId = 1000;
         self::$transients = array();
+        self::$options = array();
     }
 }
 
@@ -93,6 +97,10 @@ if ( ! defined( 'MINUTE_IN_SECONDS' ) ) {
     define( 'MINUTE_IN_SECONDS', 60 );
 }
 
+if ( ! defined( 'HOUR_IN_SECONDS' ) ) {
+    define( 'HOUR_IN_SECONDS', 3600 );
+}
+
 if ( ! function_exists( 'sanitize_key' ) ) {
     function sanitize_key( string $key ): string {
         return strtolower( preg_replace( '/[^a-z0-9_\-]/', '', $key ) ?? '' );
@@ -136,6 +144,15 @@ if ( ! function_exists( 'get_post_meta' ) ) {
 if ( ! function_exists( 'get_post' ) ) {
     function get_post( int $post_id ) {
         return RinacWpTestStore::$posts[ $post_id ] ?? null;
+    }
+}
+
+if ( ! function_exists( 'get_the_title' ) ) {
+    function get_the_title( int $post_id = 0 ): string {
+        if ( $post_id > 0 && isset( RinacWpTestStore::$posts[ $post_id ] ) ) {
+            return (string) RinacWpTestStore::$posts[ $post_id ]->post_title;
+        }
+        return '';
     }
 }
 
@@ -316,5 +333,17 @@ if ( ! function_exists( 'get_transient' ) ) {
 if ( ! function_exists( 'set_transient' ) ) {
     function set_transient( string $key, $value, int $expiration = 0 ): void {
         RinacWpTestStore::$transients[ $key ] = $value;
+    }
+}
+
+if ( ! function_exists( 'get_option' ) ) {
+    function get_option( string $option, $default = false ) {
+        return RinacWpTestStore::$options[ $option ] ?? $default;
+    }
+}
+
+if ( ! function_exists( 'update_option' ) ) {
+    function update_option( string $option, $value ): void {
+        RinacWpTestStore::$options[ $option ] = $value;
     }
 }

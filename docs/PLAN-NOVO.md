@@ -305,6 +305,19 @@ Estado del gate:
    - Criterio de completitud:
      - En escenarios de concurrencia, dos usuarios no pueden “superar” la capacidad efectiva configurada.
      - Los bloqueos caducados no consumen capacidad.
+  - Política avanzada de hold (implementada):
+    - `cart_hold` (sin pedido):
+      - scope `_rinac_hold_scope=cart`,
+      - TTL base 15 minutos,
+      - expiración deslizante por actividad (refresh con `hold_token`),
+      - límite máximo de vida de hold para evitar bloqueos indefinidos.
+    - `order_hold` (con pedido WooCommerce):
+      - scope `_rinac_hold_scope=order`,
+      - TTL dependiente de estado/método de pago (por ejemplo `on-hold`/transferencia más largo),
+      - actualización de expiración al sincronizar estados del pedido.
+    - Regla de negocio:
+      - el estado funcional lo determina `_rinac_booking_status`,
+      - `post_status` se trata como soporte técnico de visibilidad.
 
 14. **Frontend: booking form + FullCalendar**
    - Objetivo: ofrecer un formulario de reserva único que consuma los endpoints existentes y respete toda la lógica de negocio.

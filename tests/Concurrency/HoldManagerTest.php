@@ -39,4 +39,44 @@ final class HoldManagerTest extends TestCase {
         $status = (string) get_post_meta( $bookingId, '_rinac_booking_status', true );
         $this->assertSame( 'expired', $status );
     }
+
+    public function test_create_hold_uses_configured_cart_ttl(): void {
+        update_option(
+            'rinac_settings',
+            array(
+                'cart_hold_ttl_minutes' => 2,
+                'cart_hold_max_lifetime_minutes' => 10,
+                'cart_hold_refresh_min_interval_seconds' => 60,
+            )
+        );
+
+        $before = time();
+        $manager = new HoldManager();
+        $created = $manager->createHold( 100, 0, '2026-04-10', '2026-04-10', 1.0 );
+        $after = time();
+
+        $this->assertIsArray( $created );
+        $expiresAt = (int) ( $created['expires_at'] ?? 0 );
+        $this->assertGreaterThanOrEqual( $before + 120, $expiresAt );
+        $this->assertLessThanOrEqual( $after + 121, $expiresAt );
+    }
+
+    public function test_refresh_cart_hold_applies_rate_limit_from_settings(): void {
+        update_option(
+            'rinac_settings',
+            array(
+                'cart_hold_ttl_minutes' => 5,
+                'cart_hold_max_lifetime_minutes' => 30,
+                'cart_hold_refresh_min_interval_seconds' => 600,
+            )
+        );
+
+        $manager = new HoldManager();
+        $created = $manager->createHold( 100, 0, '2026-04-10', '2026-04-10', 1.0 );
+        $this->assertIsArray( $created );
+
+        $refreshed = $manager->refreshCartHold( (string) $created['hold_token'] );
+        $this->assertIsArray( $refreshed );
+        $this->assertTrue( (bool) ( $refreshed['rate_limited'] ?? false ) );
+    }
 }

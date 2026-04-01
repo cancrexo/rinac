@@ -204,6 +204,7 @@ class DepositManager {
         }
 
         $order_id = (int) $order->get_id();
+        $order_status = method_exists( $order, 'get_status' ) ? (string) $order->get_status() : 'pending';
         $order_item_id = method_exists( $item, 'get_id' ) ? (int) $item->get_id() : 0;
         $product_id = (int) $item->get_product_id();
         $equivalent_qty = isset( $values['rinac_capacity_equivalent_total'] ) && is_numeric( $values['rinac_capacity_equivalent_total'] )
@@ -212,20 +213,32 @@ class DepositManager {
         $slot_id = isset( $values['rinac_slot_id'] ) ? (int) $values['rinac_slot_id'] : 0;
         $start = isset( $values['rinac_start'] ) ? sanitize_text_field( (string) $values['rinac_start'] ) : '';
         $end = isset( $values['rinac_end'] ) ? sanitize_text_field( (string) $values['rinac_end'] ) : '';
+        $product_title = get_the_title( $product_id );
+        $product_label = is_string( $product_title ) && '' !== $product_title
+            ? $product_title
+            : sprintf(
+                /* translators: %d product id. */
+                __( 'Producto #%d', 'rinac' ),
+                $product_id
+            );
 
         $existing_booking_id = $this->bookingRepository->findByOrderItemId( $order_item_id );
         if ( $existing_booking_id > 0 ) {
+            $this->refreshOrderHoldTiming( $existing_booking_id, $order, $order_status );
             return;
         }
+
+        $hold_expires_at = time() + $this->resolveOrderHoldTtlSeconds( $order, $order_status );
 
         $booking_id = $this->bookingRepository->create(
             array(
                 'post_status' => 'private',
                 'post_title' => sprintf(
-                    /* translators: 1: order id, 2: product id. */
-                    __( 'Reserva pedido #%1$d producto #%2$d', 'rinac' ),
+                    /* translators: 1: product title, 2: start date, 3: order id. */
+                    __( 'Reserva %1$s - %2$s (pedido #%3$d)', 'rinac' ),
+                    $product_label,
+                    '' !== $start ? $start : '-',
                     $order_id,
-                    $product_id
                 ),
                 'product_id' => $product_id,
                 'slot_id' => $slot_id,
@@ -235,6 +248,8 @@ class DepositManager {
                 'end' => $end,
                 'equivalent_qty' => max( 0.0, $equivalent_qty ),
                 'booking_status' => 'hold',
+                'hold_scope' => 'order',
+                'hold_expires_at' => $hold_expires_at,
             ),
         );
 
@@ -275,6 +290,12 @@ class DepositManager {
         foreach ( $booking_ids as $booking_id ) {
             $booking_id = (int) $booking_id;
             $this->bookingRepository->setStatuses( $booking_id, $booking_status, $post_status );
+
+            if ( 'hold' === $booking_status ) {
+                $this->refreshOrderHoldTiming( $booking_id, $order, $new_status );
+            } else {
+                delete_post_meta( $booking_id, '_rinac_hold_expires_at' );
+            }
         }
 
         $this->invalidateAvailabilityTransients();
@@ -321,6 +342,68 @@ class DepositManager {
                 $like_transient,
                 $like_timeout
             )
+        );
+    }
+
+    /**
+     * Aplica ventana temporal de hold cuando ya existe pedido WooCommerce.
+     *
+     * @param int $booking_id
+     * @param mixed $order
+     * @param string $order_status
+     * @return void
+     */
+    private function refreshOrderHoldTiming( int $booking_id, $order, string $order_status ): void {
+        if ( $booking_id <= 0 ) {
+            return;
+        }
+
+        $ttl_seconds = $this->resolveOrderHoldTtlSeconds( $order, $order_status );
+        $expires_at = time() + $ttl_seconds;
+        update_post_meta( $booking_id, '_rinac_hold_scope', 'order' );
+        update_post_meta( $booking_id, '_rinac_hold_expires_at', $expires_at );
+    }
+
+    /**
+     * Determina TTL de hold para reservas asociadas a pedido.
+     *
+     * @param mixed $order
+     * @param string $order_status
+     * @return int
+     */
+    private function resolveOrderHoldTtlSeconds( $order, string $order_status ): int {
+        $settings = $this->getConcurrencySettings();
+        $payment_method = '';
+        if ( $order && is_object( $order ) && method_exists( $order, 'get_payment_method' ) ) {
+            $payment_method = (string) $order->get_payment_method();
+        }
+
+        if ( 'bacs' === $payment_method ) {
+            return max( 1, (int) $settings['order_hold_ttl_bacs_hours'] ) * HOUR_IN_SECONDS;
+        }
+
+        if ( 'on-hold' === $order_status ) {
+            return max( 1, (int) $settings['order_hold_ttl_on_hold_hours'] ) * HOUR_IN_SECONDS;
+        }
+
+        return max( 5, (int) $settings['order_hold_ttl_pending_minutes'] ) * MINUTE_IN_SECONDS;
+    }
+
+    /**
+     * Lee ajustes de concurrencia definidos en admin.
+     *
+     * @return array<string,int>
+     */
+    private function getConcurrencySettings(): array {
+        $settings = get_option( 'rinac_settings', array() );
+        if ( ! is_array( $settings ) ) {
+            $settings = array();
+        }
+
+        return array(
+            'order_hold_ttl_pending_minutes' => isset( $settings['order_hold_ttl_pending_minutes'] ) ? (int) $settings['order_hold_ttl_pending_minutes'] : 45,
+            'order_hold_ttl_on_hold_hours' => isset( $settings['order_hold_ttl_on_hold_hours'] ) ? (int) $settings['order_hold_ttl_on_hold_hours'] : 24,
+            'order_hold_ttl_bacs_hours' => isset( $settings['order_hold_ttl_bacs_hours'] ) ? (int) $settings['order_hold_ttl_bacs_hours'] : 72,
         );
     }
 }

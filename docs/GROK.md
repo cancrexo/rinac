@@ -126,6 +126,11 @@ Después de mostrarme ese plan detallado, desarrolla el plugin paso a paso en es
   - Estado actual: implementado con pantalla admin operativa, tabla de reservas y acción `admin_post` para importar datos demo.
 8. Concurrencia (quote/hold) para bloqueo temporal antes de confirmar reserva
   - Estado actual: implementado endpoint `rinac_quote_booking`, creación/confirmación de holds con expiración y ajuste de disponibilidad para ignorar holds expirados.
+  - Política actualizada (implementada):
+    - Diferenciación de scope de hold con `_rinac_hold_scope`:
+      - `cart_hold` (`cart`): TTL corto + refresh por actividad con límite de vida máximo.
+      - `order_hold` (`order`): TTL gestionado por estado/método de pago del pedido WooCommerce.
+    - La lógica de capacidad y disponibilidad depende de `_rinac_booking_status` (no de `post_status`).
 9. Frontend booking form + FullCalendar integración
 10. Templates y overrides
 11. Documentación completa (README.md + inline docs)

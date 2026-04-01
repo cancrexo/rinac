@@ -66,6 +66,11 @@ class Plugin {
      * @return void
      */
     public function onAdminInit(): void {
+        if ( class_exists( 'RINAC\\Core\\MenuRegistrar' ) ) {
+            $menu_registrar_class = 'RINAC\\Core\\MenuRegistrar';
+            ( new $menu_registrar_class() )->registerSettings();
+        }
+
         if ( class_exists( 'RINAC\\Admin\\BookingProductDataTabs' ) ) {
             $booking_tabs_class = 'RINAC\\Admin\\BookingProductDataTabs';
             ( new $booking_tabs_class() )->register();
